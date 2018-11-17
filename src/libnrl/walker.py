@@ -33,7 +33,6 @@ class BiasedWalker:  # ------ our method
         self.G = g.G  # nx data stcuture
         self.P = P  # biased transition probability; n*n; each row is a pdf for a node
         self.workers = workers
-        self.node_size = g.node_size
         self.look_back_list = g.look_back_list
         self.look_up_dict = g.look_up_dict
 
