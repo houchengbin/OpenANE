@@ -83,13 +83,7 @@ class ABRW(object):
 
         P_X = row_as_probdist(X_sim)
         t3 = time.time()
-        for i in range(P_X.shape[0]):
-            sum_row = P_X[i].sum()
-            if sum_row != 1.0:  # to avoid some numerical issue...
-                delta = 1.0 - sum_row  # delta is very very samll number say 1e-10 or even less...
-                P_X[i, i] = P_X[i, i] + delta  # the diagnoal must be largest of the that row + delta --> almost no effect
-        t4 = time.time()
-        print('topk time: ', t2-t1, 'row normlize time: ', t3-t2, 'dealing numerical issue time: ', t4-t3)
+        print('topk time: ', t2-t1, 'row normlize time: ', t3-t2)
         del A, X, X_compressed, X_sim
 
         # =====================================core of our idea========================================
@@ -100,8 +94,8 @@ class ABRW(object):
         P = sparse.diags(alp).dot(P_A) + sparse.diags(1 - alp).dot(P_X)
         print('# of single nodes for P_A: ', n - P_A.sum(axis=1).sum(), ' # of non-zero entries of P_A: ', P_A.count_nonzero())
         print('# of single nodes for P_X: ', n - P_X.sum(axis=1).sum(), ' # of non-zero entries of P_X: ', np.count_nonzero(P_X))
-        t5 = time.time()
-        print('ABRW biased transition prob preprocessing time: {:.2f}s'.format(t5-t4))
+        t4 = time.time()
+        print('ABRW biased transition prob preprocessing time: {:.2f}s'.format(t4-t3))
         return P
 
     def save_embeddings(self, filename):
