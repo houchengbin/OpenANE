@@ -3,11 +3,11 @@ import time
 import warnings
 
 import numpy as np
+from scipy import sparse
 from gensim.models import Word2Vec
-from sklearn.metrics.pairwise import cosine_similarity
 
 from . import walker
-from .utils import *
+from .utils import pairwise_similarity, row_as_probdist
 
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 
@@ -71,8 +71,8 @@ class ABRW(object):
         X = self.g.get_attr_mat()  # attr info mat
         X_compressed = X  # if need speed up, try to use svd or pca for compression, but will loss some acc
         # X_compressed = self.g.preprocessAttrInfo(X=X, dim=200, method='pca')  #svd or pca for dim reduction; follow TADW setting use svd with dim=200
-        X_sim = cosine_similarity(X_compressed, X_compressed)
-        
+        X_sim = pairwise_similarity(X_compressed)
+
         # way5: a faster implementation of way5 by Zeyu Dong
         topk = self.topk
         print('way5 remain self---------topk = ', topk)
@@ -83,30 +83,19 @@ class ABRW(object):
 
         P_X = row_as_probdist(X_sim)
         t3 = time.time()
-        for i in range(P_X.shape[0]):
-            sum_row = P_X[i].sum()
-            if sum_row != 1.0:  # to avoid some numerical issue...
-                delta = 1.0 - sum_row  # delta is very very samll number say 1e-10 or even less...
-                P_X[i, i] = P_X[i, i] + delta  # the diagnoal must be largest of the that row + delta --> almost no effect
-        t4 = time.time()
-        print('topk time: ', t2-t1, 'row normlize time: ', t3-t2, 'dealing numerical issue time: ', t4-t3)
+        print('topk time: ', t2-t1, 'row normlize time: ', t3-t2)
         del A, X, X_compressed, X_sim
 
         # =====================================core of our idea========================================
         print('------alpha for P = alpha * P_A + (1-alpha) * P_X----: ', self.alpha)
         n = self.g.get_num_nodes()
-        P = np.zeros((n, n), dtype=float)
-        # TODO: Vectorization
-        for i in range(n):
-            if (P_A[i] == 0).toarray().all():  # single node case if the whole row are 0s
-                # if P_A[i].sum() == 0:
-                P[i] = P_X[i]  # use 100% attr info to compensate
-            else:  # non-single node case; use (1.0-self.alpha) attr info to compensate
-                P[i] = self.alpha * P_A[i] + (1.0-self.alpha) * P_X[i]
+        alp = np.array(n * [self.alpha])
+        alp[~np.asarray(P_A.sum(axis=1) != 0).ravel()] = 0
+        P = sparse.diags(alp).dot(P_A) + sparse.diags(1 - alp).dot(P_X)
         print('# of single nodes for P_A: ', n - P_A.sum(axis=1).sum(), ' # of non-zero entries of P_A: ', P_A.count_nonzero())
         print('# of single nodes for P_X: ', n - P_X.sum(axis=1).sum(), ' # of non-zero entries of P_X: ', np.count_nonzero(P_X))
-        t5 = time.time()
-        print('ABRW biased transition prob preprocessing time: {:.2f}s'.format(t5-t4))
+        t4 = time.time()
+        print('ABRW biased transition prob preprocessing time: {:.2f}s'.format(t4-t3))
         return P
 
     def save_embeddings(self, filename):
