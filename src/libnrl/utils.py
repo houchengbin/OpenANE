@@ -38,7 +38,7 @@ def row_as_probdist(mat):
     row_sum[zero_rows] = 1
     diag = sparse.dia_matrix((1 / row_sum, 0), (mat.shape[0], mat.shape[0]))
     mat = diag.dot(mat)
-    mat += sparse.bsr_matrix(zero_rows.astype(int)).T.dot(sparse.bsr_matrix(np.repeat(1 / mat.shape[1], mat.shape[1])))
+    mat += sparse.csr_matrix(zero_rows.astype(int)).T.dot(sparse.csr_matrix(np.repeat(1 / mat.shape[1], mat.shape[1])))
 
     return mat
 
