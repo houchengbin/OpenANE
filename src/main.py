@@ -5,7 +5,7 @@ STEP2: prepare data -->
 STEP3: learn node embeddings -->
 STEP4: downstream evaluations
 
-python src/main.py --method abrw --save-emb True
+python src/main.py --method abrw --save-emb False
 
 by Chengbin Hou 2018 <chengbin.hou10@foxmail.com>
 '''
@@ -177,7 +177,7 @@ def main(args):
                              X_test=None, Y_test=None, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
         else:
             model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
-                             X_test=X_test_lp, Y_test=Y_test_lp, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
+                             X_test=test_node_pairs, Y_test=test_edge_labels, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
     elif args.method == 'aane':
         model = aane.AANE(graph=g, dim=args.dim, lambd=args.AANE_lamb, mode=args.AANE_mode)
     elif args.method == 'tadw':
@@ -226,7 +226,6 @@ def main(args):
 
     #---------------------------------------STEP4: downstream task-----------------------------------------------
     print('\nSTEP4: start evaluating ......: ')
-    print('nc for node classification tasks; lp for link prediction task', args.task)
     t1 = time.time()
     if args.method != 'semi_supervised_gcn':  #except semi-supervised methods, we will get emb first, and then eval emb
         vectors = 0
@@ -238,13 +237,14 @@ def main(args):
         #------lp task
         if args.task == 'lp' or args.task == 'lp_and_nc':
             #X_test_lp, Y_test_lp = read_edge_label(args.label_file)  #enable this if you want to load your own lp testing data, see classfiy.py
-            print('During embedding we have used {:.2f}% links and the remaining will be left for lp evaluation...'.format(args.link_remove*100))
+            print('Link Prediction task; the percentage of positive links for testing:' + 
+                    '{:.2f} (by default, also generate equal # of negative links for testing)'.format(args.link_remove))
             clf = lpClassifier(vectors=vectors)     #similarity/distance metric as clf; basically, lp is a binary clf probelm
             clf.evaluate(test_node_pairs, test_edge_labels)
         #------nc task
         if args.task == 'nc' or args.task == 'lp_and_nc':
             X, Y = read_node_label(args.label_file)
-            print('Training nc classifier using {:.2f}% node labels...'.format(args.label_reserved*100))
+            print('Node Classification task; the percentage of labels for testing: {:.2f}'.format(1-args.label_reserved))
             clf = ncClassifier(vectors=vectors, clf=LogisticRegression())   #use Logistic Regression as clf; we may choose SVM or more advanced ones
             clf.split_train_evaluate(X, Y, args.label_reserved)
     t2 = time.time()
