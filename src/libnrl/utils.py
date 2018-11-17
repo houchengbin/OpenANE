@@ -33,7 +33,7 @@ def row_as_probdist(mat):
         return dense matrix if input is dense matrix or numpy array
         return sparse matrix for sparse matrix input
     """
-    row_sum = np.array(mat.sum(axis=1))  # type: np.array
+    row_sum = np.array(mat.sum(axis=1)).ravel()  # type: np.array
     zero_rows = row_sum == 0
     row_sum[zero_rows] = 1
     diag = sparse.dia_matrix((1 / row_sum, 0), (mat.shape[0], mat.shape[0]))

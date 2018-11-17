@@ -8,7 +8,7 @@ import gensim
 from gensim.models import Word2Vec
 from . import walker
 import networkx as nx
-from libnrl.utils import *
+from .utils import *
 import multiprocessing
 
 '''
@@ -99,7 +99,7 @@ class ABRW(object):
             sum_row = P_X[i].sum()
             if sum_row != 1.0:          #to avoid some numerical issue...
                 delta = 1.0 - sum_row   #delta is very very samll number say 1e-10 or even less...
-                P_X[i][i] = P_X[i][i] + delta  #the diagnoal must be largest of the that row + delta --> almost no effect
+                P_X[i, i] = P_X[i, i] + delta  #the diagnoal must be largest of the that row + delta --> almost no effect
         t4 = time.time()
         print('topk time: ',t2-t1 ,'row normlize time: ',t3-t2, 'dealing numerical issue time: ', t4-t3)
         del A, X, X_compressed, X_sim
@@ -108,13 +108,14 @@ class ABRW(object):
         print('------alpha for P = alpha * P_A + (1-alpha) * P_X----: ', self.alpha)
         n = self.g.get_num_nodes()
         P = np.zeros((n,n), dtype=float)
+        # TODO: Vectorization
         for i in range(n):
-            if (P_A[i] == 0).all():  #single node case if the whole row are 0s
+            if (P_A[i] == 0).toarray().all():  #single node case if the whole row are 0s
             #if P_A[i].sum() == 0:
                 P[i] = P_X[i]        #use 100% attr info to compensate 
             else:                    #non-single node case; use (1.0-self.alpha) attr info to compensate
                 P[i] = self.alpha * P_A[i] + (1.0-self.alpha) * P_X[i]
-        print('# of single nodes for P_A: ', n - P_A.sum(axis=1).sum(), ' # of non-zero entries of P_A: ', np.count_nonzero(P_A))
+        print('# of single nodes for P_A: ', n - P_A.sum(axis=1).sum(), ' # of non-zero entries of P_A: ', P_A.count_nonzero())
         print('# of single nodes for P_X: ', n - P_X.sum(axis=1).sum(), ' # of non-zero entries of P_X: ', np.count_nonzero(P_X))
         t5 = time.time()
         print('ABRW biased transition prob preprocessing time: {:.2f}s'.format(t5-t4))
