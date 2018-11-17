@@ -4,10 +4,9 @@ import warnings
 
 import numpy as np
 from gensim.models import Word2Vec
-from sklearn.metrics.pairwise import cosine_similarity
 
 from . import walker
-from .utils import *
+from .utils import pairwise_similarity, row_as_probdist
 
 warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 
@@ -71,8 +70,8 @@ class ABRW(object):
         X = self.g.get_attr_mat()  # attr info mat
         X_compressed = X  # if need speed up, try to use svd or pca for compression, but will loss some acc
         # X_compressed = self.g.preprocessAttrInfo(X=X, dim=200, method='pca')  #svd or pca for dim reduction; follow TADW setting use svd with dim=200
-        X_sim = cosine_similarity(X_compressed, X_compressed)
-        
+        X_sim = pairwise_similarity(X_compressed)
+
         # way5: a faster implementation of way5 by Zeyu Dong
         topk = self.topk
         print('way5 remain self---------topk = ', topk)
