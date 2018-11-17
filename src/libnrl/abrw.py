@@ -3,6 +3,7 @@ import time
 import warnings
 
 import numpy as np
+from scipy import sparse
 from gensim.models import Word2Vec
 
 from . import walker
@@ -94,14 +95,9 @@ class ABRW(object):
         # =====================================core of our idea========================================
         print('------alpha for P = alpha * P_A + (1-alpha) * P_X----: ', self.alpha)
         n = self.g.get_num_nodes()
-        P = np.zeros((n, n), dtype=float)
-        # TODO: Vectorization
-        for i in range(n):
-            if (P_A[i] == 0).toarray().all():  # single node case if the whole row are 0s
-                # if P_A[i].sum() == 0:
-                P[i] = P_X[i]  # use 100% attr info to compensate
-            else:  # non-single node case; use (1.0-self.alpha) attr info to compensate
-                P[i] = self.alpha * P_A[i] + (1.0-self.alpha) * P_X[i]
+        alp = np.array(n * [self.alpha])
+        alp[~np.asarray(P_A.sum(axis=1) != 0).ravel()] = 0
+        P = sparse.diags(alp).dot(P_A) + sparse.diags(1 - alp).dot(P_X)
         print('# of single nodes for P_A: ', n - P_A.sum(axis=1).sum(), ' # of non-zero entries of P_A: ', P_A.count_nonzero())
         print('# of single nodes for P_X: ', n - P_X.sum(axis=1).sum(), ' # of non-zero entries of P_X: ', np.count_nonzero(P_X))
         t5 = time.time()
