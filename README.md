@@ -1,8 +1,8 @@
 # OpenANE: The first open source toolkit specialized in Attributed Network Embedding (ANE)
 authors: Chengbin Hou & Zeyu Dong 2018
-Correspondence Email: chengbin.hou10 AT foxmail.com
+Email Correspondence: chengbin.hou10 AT foxmail.com
 
-## Methods Realized
+## Methods
 ABRW:
 GCN:
 GraphSAGE:
@@ -21,6 +21,10 @@ pip install -r requirements.txt
 
 ## Usages
 python src/main.py --method abrw
+
+## Datasets
+Cora
+Refer to xxxxx for other datasets such as Citeseer, PubMed, Facebook_Stanford and Facebook_MIT.
 
 ## Acknowledgement
 We start this project based on https://github.com/thunlp/OpenNE and thanks to their excellent project.
