@@ -16,6 +16,8 @@ __pycache__
 # My configurations:
 db.ini
 deploy_key_rsa
+log
+bash
 
 
 #zeyu--------------------------------

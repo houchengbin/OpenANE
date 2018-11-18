@@ -44,7 +44,8 @@ def row_as_probdist(mat):
 
 
 def pairwise_similarity(mat, type='cosine'):
-    # XXX: possible to integrate pairwise_similarity with top_k to enhance performance?
+    # XXX: possible to integrate pairwise_similarity with top_k to enhance performance? 
+    # we'll use it elsewhere. if really needed, write a new method for this purpose
     if type == 'cosine':  # support sprase and dense mat
         from sklearn.metrics.pairwise import cosine_similarity
         result = cosine_similarity(mat, dense_output=True)
@@ -193,6 +194,7 @@ def generate_edges_for_linkpred(graph, edges_removed, balance_ratio=1.0):
 
 
 def dim_reduction(mat, dim=128, method='pca'):
+    import time
     ''' dimensionality reduction: PCA, SVD, etc...
         dim = # of columns
     '''
