@@ -175,7 +175,7 @@ def main(args):
     elif args.method == 'tadw':
         model = tadw.TADW(graph=g, dim=args.dim, lamb=args.TADW_lamb, maxiter=args.TADW_maxiter)
     elif args.method == 'attrpure':
-        model = attrpure.ATTRPURE(graph=g, dim=args.dim)  #mode: pca or svd
+        model = attrpure.ATTRPURE(graph=g, dim=args.dim, mode='pca')  #mode: pca or svd
     elif args.method == 'attrcomb':
         model = attrcomb.ATTRCOMB(graph=g, dim=args.dim, comb_with='deepwalk', num_paths=args.number_walks, 
                                     comb_method=args.AttrComb_mode)  #comb_method: concat, elementwise-mean, elementwise-max
