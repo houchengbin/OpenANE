@@ -30,8 +30,8 @@ class WeightedWalker:
         self.workers = workers
         # self.G = nx.to_networkx_graph(self.T, create_using=nx.Graph())  # wrong... will return symt transition mat
         self.G = nx.to_networkx_graph(self.T, create_using=nx.DiGraph())  # reconstructed graph based on transition matrix
-        print(nx.adjacency_matrix(self.G).todense()[0:6, 0:6])
-        print(transition_mat[0:6, 0:6])
+        # print(nx.adjacency_matrix(self.G).todense()[0:6, 0:6])
+        # print(transition_mat[0:6, 0:6])
         # print(nx.adjacency_matrix(self.G).todense()==transition_mat)
 
     # alias sampling for ABRW-------------------------
@@ -68,9 +68,9 @@ class WeightedWalker:
                 break
         return walk
 
-    def preprocess_transition_probs(self, G):  # to do... since we already have transition matrix, no need to norm again
-        alias_nodes = {}                       # we may use self.T = transition_mat ??
-        for node in G.nodes():
+    def preprocess_transition_probs(self, G):
+        alias_nodes = {}                       # unlike node2vec, the reconstructed graph is based on transtion matrix
+        for node in G.nodes():                 # no need to normalize again
             probs = [G[node][nbr]['weight'] for nbr in G.neighbors(node)]
             alias_nodes[node] = alias_setup(probs)
         self.alias_nodes = alias_nodes
@@ -266,8 +266,8 @@ class Walker:
         triads = {}
 
         look_up_dict = self.look_up_dict
-        node_size = self.node_size
-        for edge in G.edges():
+        node_size = self.node_size    #to do... node2vec directed and undirected
+        for edge in G.edges():        #https://github.com/aditya-grover/node2vec/blob/master/src/node2vec.py
             alias_edges[edge] = self.get_alias_edge(edge[0], edge[1])
 
         self.alias_nodes = alias_nodes

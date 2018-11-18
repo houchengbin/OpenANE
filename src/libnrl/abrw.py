@@ -6,6 +6,7 @@ by Chengbin Hou & Zeyu Dong 2018
 
 import time
 import warnings
+warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 
 import numpy as np
 from gensim.models import Word2Vec
@@ -13,8 +14,6 @@ from scipy import sparse
 
 from . import walker
 from .utils import pairwise_similarity, row_as_probdist
-
-warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 
 
 class ABRW(object):
@@ -29,12 +28,13 @@ class ABRW(object):
         # obtain biased transition mat -----------
         self.T = self.get_biased_transition_mat(A=self.g.get_adj_mat(), X=self.g.get_attr_mat())
 
-        # generate sentences according to biased transition mat T-------------
+        # aim to generate a sequences of walks/sentences
+        # apply weighted random walks on the reconstructed network based on biased transition mat
         kwargs["workers"] = kwargs.get("workers", 8)
         weighted_walker = walker.WeightedWalker(node_id_map=self.g.look_back_list, transition_mat=self.T, workers=kwargs["workers"])  # instance weighted walker
         sentences = weighted_walker.simulate_walks(num_walks=self.number_walks, walk_length=self.walk_length)
 
-        # other Word2Vec parameters and traning embeddings-----------------
+        # feed the walks/sentences into Word2Vec Skip-Gram model for traning node embeddings
         kwargs["sentences"] = sentences
         kwargs["size"] = self.dim
         kwargs["sg"] = 1  # use skip-gram; but see deepwalk which uses 'hs' = 1
@@ -92,8 +92,8 @@ class ABRW(object):
         print(f'ABRW biased transition matrix processing time: {(t5-t4):.2f}s')
         return T
 
-    def save_embeddings(self, filename):
-        fout = open(filename, 'w')
+    def save_embeddings(self, filename):  #to do... put it to utils;
+        fout = open(filename, 'w')        #call it while __init__ (abrw calss) with flag --save-emb=True (from main.py)
         node_num = len(self.vectors.keys())
         fout.write("{} {}\n".format(node_num, self.dim))
         for node, vec in self.vectors.items():
