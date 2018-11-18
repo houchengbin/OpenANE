@@ -71,11 +71,8 @@ class WeightedWalker:
     def preprocess_transition_probs(self, G):  # to do... since we already have transition matrix, no need to norm again
         alias_nodes = {}                       # we may use self.T = transition_mat ??
         for node in G.nodes():
-            unnormalized_probs = [G[node][nbr]['weight'] for nbr in G.neighbors(node)]
-            norm_const = sum(unnormalized_probs)
-            # 不确定这里返回的是否和 transition matrix一致；快速验证办法就是用self.look_back_list = node_id_map和self.T = transition_mat来替代这里代码，然后直接看最后lp nc结果是否接近
-            normalized_probs = [float(u_prob)/norm_const for u_prob in unnormalized_probs]
-            alias_nodes[node] = alias_setup(normalized_probs)
+            probs = [G[node][nbr]['weight'] for nbr in G.neighbors(node)]
+            alias_nodes[node] = alias_setup(probs)
         self.alias_nodes = alias_nodes
 
 
