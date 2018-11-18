@@ -78,8 +78,8 @@ def parse_args():
                         help='balance struc and attr info; ranging [0, inf]')
     parser.add_argument('--AANE-rho', default=5, type=float,
                         help='penalty parameter; ranging [0, inf]')
-    parser.add_argument('--AANE-mode', default='comb', type=str, 
-                        help='choices of mode: comb, pure')  
+    parser.add_argument('--AANE-maxiter', default=10, type=float,
+                        help='penalty parameter; ranging [0, inf]')
     parser.add_argument('--ASNE-lamb', default=1.0, type=float,
                         help='balance struc and attr info; ranging [0, inf]')
     parser.add_argument('--AttrComb-mode', default='concat', type=str,
@@ -167,11 +167,16 @@ def main(args):
     if args.method == 'abrw': 
         model = abrw.ABRW(graph=g, dim=args.dim, alpha=args.ABRW_alpha, topk=args.ABRW_topk, number_walks=args.number_walks,
                             walk_length=args.walk_length, window=args.window_size, workers=args.workers)
+    elif args.method == 'aane':
+        model = aane.AANE(graph=g, dim=args.dim, lambd=args.AANE_lamb, rho=args.AANE_rho, maxiter=args.AANE_maxiter, 
+                            mode='comb') #mode: 'comb' struc and attri or 'pure' struc
+    elif args.method == 'tadw':
+        model = tadw.TADW(graph=g, dim=args.dim, lamb=args.TADW_lamb)
     elif args.method == 'attrpure':
-        model = attrpure.ATTRPURE(graph=g, dim=args.dim)
+        model = attrpure.ATTRPURE(graph=g, dim=args.dim)  #mode: pca or svd
     elif args.method == 'attrcomb':
-        model = attrcomb.ATTRCOMB(graph=g, dim=args.dim, comb_with='deepwalk',
-                                     num_paths=args.number_walks, comb_method=args.AttrComb_mode)  #concat, elementwise-mean, elementwise-max
+        model = attrcomb.ATTRCOMB(graph=g, dim=args.dim, comb_with='deepwalk', num_paths=args.number_walks, 
+                                    comb_method=args.AttrComb_mode)  #comb_method: concat, elementwise-mean, elementwise-max
     elif args.method == 'asne':
         if args.task == 'nc':
             model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
@@ -179,10 +184,6 @@ def main(args):
         else:
             model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
                              X_test=test_node_pairs, Y_test=test_edge_labels, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
-    elif args.method == 'aane':
-        model = aane.AANE(graph=g, dim=args.dim, lambd=args.AANE_lamb, mode=args.AANE_mode)
-    elif args.method == 'tadw':
-        model = tadw.TADW(graph=g, dim=args.dim, lamb=args.TADW_lamb)
     elif args.method == 'deepwalk':
         model = node2vec.Node2vec(graph=g, path_length=args.walk_length,
                                  num_paths=args.number_walks, dim=args.dim,
