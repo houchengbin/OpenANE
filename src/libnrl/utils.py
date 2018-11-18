@@ -17,7 +17,7 @@ from scipy import sparse
 # ---------------------------------ulits for calculation--------------------------------
 
 
-def row_as_probdist(mat):
+def row_as_probdist(mat):  #to do... also return dense matrix via a flag setting
     """Make each row of matrix sums up to 1.0, i.e., a probability distribution.
     Support both dense and sparse matrix.
 
@@ -35,6 +35,7 @@ def row_as_probdist(mat):
     dense or sparse matrix:
         return dense matrix if input is dense matrix or numpy array
         return sparse matrix for sparse matrix input
+        (note: np.array & np.matrix are diff; and may cause some dim issues...)
     """
     row_sum = np.array(mat.sum(axis=1)).ravel()  # type: np.array
     zero_rows = row_sum == 0

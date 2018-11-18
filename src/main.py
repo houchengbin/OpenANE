@@ -71,15 +71,17 @@ def parse_args():
     parser.add_argument('--ABRW-topk', default=30, type=int,
                         help='select the most attr similar top k nodes of a node; ranging [0, # of nodes]') 
     parser.add_argument('--ABRW-alpha', default=0.8, type=float,
-                        help='balance struc and attr info; ranging [0, 1]') 
-    parser.add_argument('--TADW-lamb', default=0.2, type=float,
-                        help='balance struc and attr info; ranging [0, inf]')       
+                        help='balance struc and attr info; ranging [0, 1]')       
     parser.add_argument('--AANE-lamb', default=0.05, type=float,
                         help='balance struc and attr info; ranging [0, inf]')
     parser.add_argument('--AANE-rho', default=5, type=float,
                         help='penalty parameter; ranging [0, inf]')
-    parser.add_argument('--AANE-maxiter', default=10, type=float,
-                        help='penalty parameter; ranging [0, inf]')
+    parser.add_argument('--AANE-maxiter', default=10, type=int,
+                        help='max iter')
+    parser.add_argument('--TADW-lamb', default=0.2, type=float,
+                        help='balance struc and attr info; ranging [0, inf]') 
+    parser.add_argument('--TADW-maxiter', default=10, type=int,
+                        help='max iter') 
     parser.add_argument('--ASNE-lamb', default=1.0, type=float,
                         help='balance struc and attr info; ranging [0, inf]')
     parser.add_argument('--AttrComb-mode', default='concat', type=str,
@@ -171,7 +173,7 @@ def main(args):
         model = aane.AANE(graph=g, dim=args.dim, lambd=args.AANE_lamb, rho=args.AANE_rho, maxiter=args.AANE_maxiter, 
                             mode='comb') #mode: 'comb' struc and attri or 'pure' struc
     elif args.method == 'tadw':
-        model = tadw.TADW(graph=g, dim=args.dim, lamb=args.TADW_lamb)
+        model = tadw.TADW(graph=g, dim=args.dim, lamb=args.TADW_lamb, maxiter=args.TADW_maxiter)
     elif args.method == 'attrpure':
         model = attrpure.ATTRPURE(graph=g, dim=args.dim)  #mode: pca or svd
     elif args.method == 'attrcomb':
