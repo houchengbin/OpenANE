@@ -73,6 +73,7 @@ class ABRW(object):
         print(f'keep the top {self.topk} attribute similar nodes w.r.t. a node')
         cutoff = np.partition(X_sim, -self.topk, axis=1)[:, -self.topk:].min(axis=1)
         X_sim[(X_sim < cutoff)] = 0
+        X_sim = sparse.csc_matrix(X_sim)
 
         t3 = time.time()
         T_X = row_as_probdist(X_sim)
