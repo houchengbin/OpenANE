@@ -177,7 +177,7 @@ def main(args):
                              X_test=None, Y_test=None, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
         else:
             model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
-                             X_test=X_test_lp, Y_test=Y_test_lp, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
+                             X_test=test_node_pairs, Y_test=test_edge_labels, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
     elif args.method == 'aane':
         model = aane.AANE(graph=g, dim=args.dim, lambd=args.AANE_lamb, mode=args.AANE_mode)
     elif args.method == 'tadw':

@@ -75,7 +75,7 @@ def tranform_data_for_graphsage(graph):
     #conversion = lambda n : int(n)  # compatible with networkx >2.0
     #id_map = {conversion(k):int(v) for k,v in id_map.items()}  # due to graphSAGE requirement 
 
-    feats = np.array([G.nodes[id]['feature'] for id in id_map.keys()])
+    feats = np.array([G.nodes[id]['attr'] for id in id_map.keys()])
     normalize = True  #have decleared in __init__.py
     if normalize and not feats is None:
         print("-------------row norm of node attributes/features------------------")

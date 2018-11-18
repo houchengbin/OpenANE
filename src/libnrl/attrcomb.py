@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
-import numpy as np
 import time
+
 import networkx as nx
-from . import node2vec, line, grarep
+import numpy as np
+
+from . import grarep, line, node2vec
+from .utils import dim_reduction
+
 
 '''
 #-----------------------------------------------------------------------------
@@ -58,8 +62,8 @@ class ATTRCOMB(object):
 
 
     def train_attr(self, dim):
-        X = self.g.getX()
-        X_compressed = self.g.preprocessAttrInfo(X=X, dim=dim, method='svd')  #svd or pca for dim reduction
+        X = self.g.get_attr_mat()
+        X_compressed = dim_reduction(X, dim=dim, method='svd')  #svd or pca for dim reduction
         print('X_compressed shape: ', X_compressed.shape)
         return np.array(X_compressed)    #n*dim matrix, each row corresponding to node ID stored in graph.look_back_list
 
@@ -93,4 +97,3 @@ class ATTRCOMB(object):
             fout.write("{} {}\n".format(node,
                                         ' '.join([str(x) for x in vec])))
         fout.close()     
-
