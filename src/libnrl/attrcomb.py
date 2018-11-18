@@ -1,4 +1,9 @@
-# -*- coding: utf-8 -*-
+"""
+NE method: naively combine AttrPure and DeepWalk (AttrComb)
+
+by Chengbin Hou 2018
+"""
+
 import time
 
 import networkx as nx
@@ -7,20 +12,14 @@ import numpy as np
 from . import grarep, line, node2vec
 from .utils import dim_reduction
 
-
-'''
-#-----------------------------------------------------------------------------
-# author: Chengbin Hou 2018
-# Email: Chengbin.Hou10@foxmail.com
-#-----------------------------------------------------------------------------
-'''
-
 class ATTRCOMB(object):
-
-    def __init__(self, graph, dim, comb_method='concat', num_paths=10, comb_with='deepWalk'):
+    def __init__(self, graph, dim, comb_method='concat', comb_with='deepWalk', number_walks=10, walk_length=80, window=10, workers=8):
         self.g = graph
         self.dim = dim
-        self.num_paths = num_paths
+        self.number_walks= number_walks
+        self.walk_length = walk_length
+        self.window = window
+        self.workers = workers
         
         print("Learning representation...")
         self.vectors = {}
@@ -71,14 +70,16 @@ class ATTRCOMB(object):
     def train_nrl(self, dim, comb_with):
         print('attr naively combined with ', comb_with, '=====================')
         if comb_with == 'deepWalk':
-            model = node2vec.Node2vec(graph=self.g, path_length=80, num_paths=self.num_paths, dim=dim, workers=4, window=10, dw=True)
+            model = node2vec.Node2vec(graph=self.g, dim=dim, path_length=self.walk_length,  #do not use self.dim here
+                                        num_paths=self.number_walks, workers=self.workers, window=self.window, dw=True)
             nrl_embeddings = []
             for key in self.g.look_back_list:
                 nrl_embeddings.append(model.vectors[key])
             return np.array(nrl_embeddings)
 
-        elif args.method == 'node2vec':
-            model = node2vec.Node2vec(graph=self.g, path_length=80, num_paths=self.num_paths, dim=dim, workers=4, p=0.8, q=0.8, window=10)
+        elif comb_with == 'node2vec': #to do... the parameters
+            model = node2vec.Node2vec(graph=self.g, path_length=80, num_paths=self.number_walks, 
+                                        dim=dim, workers=4, p=0.8, q=0.8, window=10)
             nrl_embeddings = []
             for key in self.g.look_back_list:
                 nrl_embeddings.append(model.vectors[key])

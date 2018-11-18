@@ -177,8 +177,8 @@ def main(args):
     elif args.method == 'attrpure':
         model = attrpure.ATTRPURE(graph=g, dim=args.dim, mode='pca')  #mode: pca or svd
     elif args.method == 'attrcomb':
-        model = attrcomb.ATTRCOMB(graph=g, dim=args.dim, comb_with='deepwalk', num_paths=args.number_walks, 
-                                    comb_method=args.AttrComb_mode)  #comb_method: concat, elementwise-mean, elementwise-max
+        model = attrcomb.ATTRCOMB(graph=g, dim=args.dim, comb_with='deepwalk', number_walks=args.number_walks, walk_length=args.walk_length,
+                                    window=args.window_size, workers=args.workers, comb_method=args.AttrComb_mode)  #comb_method: concat, elementwise-mean, elementwise-max
     elif args.method == 'asne':
         if args.task == 'nc':
             model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
