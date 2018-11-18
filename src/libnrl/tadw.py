@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+
 import math
+
 import numpy as np
 from numpy import linalg as la
 from sklearn.preprocessing import normalize
+
 from .gcn.utils import *
+from .utils import row_as_probdist
+
 
 '''
 #-----------------------------------------------------------------------------
@@ -34,14 +39,14 @@ class TADW(object):
         # ScaleSimMat
         return adj/np.sum(adj, axis=1)   #orignal way may get numerical error sometimes...
         '''
-        A = self.g.getA()
-        return self.g.rowAsPDF(A)
+        A = self.g.get_adj_mat()
+        return row_as_probdist(A)
         
 
     def getT(self):  #changed with the same data preprocessing method
         g = self.g.G
         look_back = self.g.look_back_list
-        self.features = np.vstack([g.nodes[look_back[i]]['feature']
+        self.features = np.vstack([g.nodes[look_back[i]]['attr']
             for i in range(g.number_of_nodes())]) 
         self.preprocessFeature()    #call the orig data preprocessing method
         return self.features.T
@@ -125,4 +130,3 @@ class TADW(object):
         look_back = self.g.look_back_list
         for i, embedding in enumerate(self.Vecs):
             self.vectors[look_back[i]] = embedding
-            

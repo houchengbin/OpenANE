@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
-import numpy as np
 import time
+
 import networkx as nx
+import numpy as np
+
+from .utils import dim_reduction
+
 
 '''
 #-----------------------------------------------------------------------------
@@ -23,8 +27,8 @@ class ATTRPURE(object):
             self.vectors[key] = embeddings[ind]
 
     def train(self):
-        X = self.g.getX()
-        X_compressed = self.g.preprocessAttrInfo(X=X, dim=self.dim, method='svd')  #svd or pca for dim reduction
+        X = self.g.get_attr_mat()
+        X_compressed = dim_reduction(X, dim=self.dim, method='svd')  #svd or pca for dim reduction
         return X_compressed    #n*dim matrix, each row corresponding to node ID stored in graph.look_back_list
 
 

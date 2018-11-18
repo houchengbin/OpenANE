@@ -36,8 +36,8 @@ class AANE:
         self.look_back_list = graph.look_back_list #look back node id for A and X
         if mode == 'comb':
             print('==============AANE-comb mode: jointly learn emb from both structure and attribute info========')
-            Net = sparse.csr_matrix(graph.getA())
-            Attri = sparse.csr_matrix(graph.getX())
+            Net = sparse.csr_matrix(graph.get_adj_mat())
+            Attri = sparse.csr_matrix(graph.get_attr_mat())
         elif mode == 'pure':
             print('======================AANE-pure mode: learn emb from structure info purely====================')
             Net = graph.getA()
