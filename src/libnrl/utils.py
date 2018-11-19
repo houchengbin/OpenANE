@@ -25,7 +25,8 @@ def row_as_probdist(mat, dense_output=False):
     ----------
     mat : scipy sparse matrix or dense matrix or numpy array
         The matrix to be normalized
-
+    dense_output : bool
+        whether forced dense output
     Note
     ----
     For row with all entries 0, we normalize it to a vector with all entries 1/n
