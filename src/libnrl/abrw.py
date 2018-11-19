@@ -64,7 +64,9 @@ class ABRW(object):
         '''
         print("obtaining biased transition matrix where each row sums up to 1.0...")
 
-        T_A = row_as_probdist(A)  # norm adj/struc info mat; for isolated node, return all-zeros row or all-1/m row
+        preserve_zeros = False  # compare them: 1) accuracy; 2) efficiency
+        T_A = row_as_probdist(A, preserve_zeros)  # norm adj/struc info mat; for isolated node, return all-zeros row or all-1/m row
+        print('Preserve zero rows of the adj matrix: ', preserve_zeros)
 
         t1 = time.time()
         X_sim = pairwise_similarity(X)  # attr similarity mat; X_sim is a square mat, but X is not
@@ -72,7 +74,7 @@ class ABRW(object):
         t2 = time.time()
         print(f'keep the top {self.topk} attribute similar nodes w.r.t. a node')
         cutoff = np.partition(X_sim, -self.topk, axis=1)[:, -self.topk:].min(axis=1)
-        X_sim[(X_sim < cutoff)] = 0
+        X_sim[(X_sim < cutoff)] = 0  # improve both accuracy and efficiency
         X_sim = sparse.csr_matrix(X_sim)
 
         t3 = time.time()
