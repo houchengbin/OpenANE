@@ -86,7 +86,7 @@ def parse_args():
                         help='balance struc and attr info; ranging [0, inf]')
     parser.add_argument('--AttrComb-mode', default='concat', type=str,
                         help='choices of mode: concat, elementwise-mean, elementwise-max')
-    parser.add_argument('--Node2Vec-p', default=0.5, type=float,
+    parser.add_argument('--Node2Vec-p', default=0.5, type=float,  #if p=q=1.0 node2vec = deepwalk
                         help='trade-off BFS and DFS; rid search [0.25; 0.50; 1; 2; 4]')             
     parser.add_argument('--Node2Vec-q', default=0.5, type=float,
                         help='trade-off BFS and DFS; rid search [0.25; 0.50; 1; 2; 4]')
@@ -179,20 +179,12 @@ def main(args):
     elif args.method == 'attrcomb':
         model = attrcomb.ATTRCOMB(graph=g, dim=args.dim, comb_with='deepwalk', number_walks=args.number_walks, walk_length=args.walk_length,
                                     window=args.window_size, workers=args.workers, comb_method=args.AttrComb_mode)  #comb_method: concat, elementwise-mean, elementwise-max
-    elif args.method == 'asne':
-        if args.task == 'nc':
-            model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
-                             X_test=None, Y_test=None, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
-        else:
-            model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
-                             X_test=test_node_pairs, Y_test=test_edge_labels, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
     elif args.method == 'deepwalk':
-        model = node2vec.Node2vec(graph=g, path_length=args.walk_length,
-                                 num_paths=args.number_walks, dim=args.dim,
+        model = node2vec.Node2vec(graph=g, path_length=args.walk_length, num_paths=args.number_walks, dim=args.dim,
                                  workers=args.workers, window=args.window_size, dw=True)
     elif args.method == 'node2vec':
         model = node2vec.Node2vec(graph=g, path_length=args.walk_length, num_paths=args.number_walks, dim=args.dim,
-                                 workers=args.workers, p=args.Node2Vec_p, q=args.Node2Vec_q, window=args.window_size)
+                                 workers=args.workers, window=args.window_size, p=args.Node2Vec_p, q=args.Node2Vec_q)
     elif args.method == 'grarep':
         model = GraRep(graph=g, Kstep=args.GraRep_kstep, dim=args.dim)
     elif args.method == 'line':
@@ -201,6 +193,13 @@ def main(args):
                 label_file=args.label_file, clf_ratio=args.label_reserved)
         else:
             model = line.LINE(g, epoch = args.epochs, rep_size=args.dim, order=args.LINE_order)
+    elif args.method == 'asne':
+        if args.task == 'nc':
+            model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
+                             X_test=None, Y_test=None, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
+        else:
+            model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
+                             X_test=test_node_pairs, Y_test=test_edge_labels, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
     elif args.method == 'graphsage':
         model = graphsageAPI.graphsage_unsupervised_train(graph=g, graphsage_model = 'graphsage_mean')  
         #we follow the default parameters, see __inti__.py in graphsage file
