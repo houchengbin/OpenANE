@@ -1,22 +1,25 @@
-# -*- coding: utf-8 -*-
-import numpy as np
-import time
-import networkx as nx
-from . import node2vec, line, grarep
+"""
+NE method: naively combine AttrPure and DeepWalk (AttrComb)
 
-'''
-#-----------------------------------------------------------------------------
-# author: Chengbin Hou 2018
-# Email: Chengbin.Hou10@foxmail.com
-#-----------------------------------------------------------------------------
-'''
+by Chengbin Hou 2018
+"""
+
+import time
+
+import networkx as nx
+import numpy as np
+
+from . import grarep, line, node2vec
+from .utils import dim_reduction
 
 class ATTRCOMB(object):
-
-    def __init__(self, graph, dim, comb_method='concat', num_paths=10, comb_with='deepWalk'):
+    def __init__(self, graph, dim, comb_method='concat', comb_with='deepWalk', number_walks=10, walk_length=80, window=10, workers=8):
         self.g = graph
         self.dim = dim
-        self.num_paths = num_paths
+        self.number_walks= number_walks
+        self.walk_length = walk_length
+        self.window = window
+        self.workers = workers
         
         print("Learning representation...")
         self.vectors = {}
@@ -58,8 +61,8 @@ class ATTRCOMB(object):
 
 
     def train_attr(self, dim):
-        X = self.g.getX()
-        X_compressed = self.g.preprocessAttrInfo(X=X, dim=dim, method='svd')  #svd or pca for dim reduction
+        X = self.g.get_attr_mat()
+        X_compressed = dim_reduction(X, dim=dim, method='svd')  #svd or pca for dim reduction
         print('X_compressed shape: ', X_compressed.shape)
         return np.array(X_compressed)    #n*dim matrix, each row corresponding to node ID stored in graph.look_back_list
 
@@ -67,14 +70,16 @@ class ATTRCOMB(object):
     def train_nrl(self, dim, comb_with):
         print('attr naively combined with ', comb_with, '=====================')
         if comb_with == 'deepWalk':
-            model = node2vec.Node2vec(graph=self.g, path_length=80, num_paths=self.num_paths, dim=dim, workers=4, window=10, dw=True)
+            model = node2vec.Node2vec(graph=self.g, dim=dim, path_length=self.walk_length,  #do not use self.dim here
+                                        num_paths=self.number_walks, workers=self.workers, window=self.window, dw=True)
             nrl_embeddings = []
             for key in self.g.look_back_list:
                 nrl_embeddings.append(model.vectors[key])
             return np.array(nrl_embeddings)
 
-        elif args.method == 'node2vec':
-            model = node2vec.Node2vec(graph=self.g, path_length=80, num_paths=self.num_paths, dim=dim, workers=4, p=0.8, q=0.8, window=10)
+        elif comb_with == 'node2vec': #to do... the parameters
+            model = node2vec.Node2vec(graph=self.g, path_length=80, num_paths=self.number_walks, 
+                                        dim=dim, workers=4, p=0.8, q=0.8, window=10)
             nrl_embeddings = []
             for key in self.g.look_back_list:
                 nrl_embeddings.append(model.vectors[key])
@@ -93,4 +98,3 @@ class ATTRCOMB(object):
             fout.write("{} {}\n".format(node,
                                         ' '.join([str(x) for x in vec])))
         fout.close()     
-

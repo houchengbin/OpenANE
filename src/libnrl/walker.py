@@ -1,59 +1,59 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function
+"""
+(weighted) random walks for walk-based NE methods: 
+DeepWalk, Node2Vec, TriDNR, and ABRW;
+alias sampling; walks by multiprocessors; etc.
+
+by Chengbin Hou & Zeyu Dong 2018
+"""
 
 import functools
 import multiprocessing
 import random
 import time
-
 import numpy as np
 from networkx import nx
-
-
-'''
-#-----------------------------------------------------------------------------
-# part of code was originally forked from https://github.com/thunlp/OpenNE
-# modified by Chengbin Hou @ SUSTech 2018
-# Email: Chengbin.Hou10@foxmail.com
-# ***class BiasedWalker was created by Chengbin Hou
-# ***we realize two ways to do ABRW 
-#       1) naive sampling (also multi-processor version)
-#       2) alias sampling (similar to node2vec)
-#-----------------------------------------------------------------------------
-'''
 
 
 def deepwalk_walk_wrapper(class_instance, walk_length, start_node):
     class_instance.deepwalk_walk(walk_length, start_node)
 
-
 # ===========================================ABRW-weighted-walker============================================
-class BiasedWalker:  # ------ our method
-    def __init__(self, g, P, workers):
-        self.G = g.G  # nx data stcuture
-        self.P = P  # biased transition probability; n*n; each row is a pdf for a node
-        self.workers = workers
-        self.look_back_list = g.look_back_list
-        self.look_up_dict = g.look_up_dict
 
-    # alias sampling for ABRW-------------------------------------------------------------------
+
+class WeightedWalker:
+    ''' Weighted Walker for Attributed Biased Randomw Walks (ABRW) method
+    '''
+
+    def __init__(self, node_id_map, transition_mat, workers):
+        self.look_back_list = node_id_map
+        self.T = transition_mat
+        self.workers = workers
+        # self.G = nx.to_networkx_graph(self.T, create_using=nx.Graph())  # wrong... will return symt transition mat
+        self.G = nx.to_networkx_graph(self.T, create_using=nx.DiGraph())  # reconstructed graph based on transition matrix
+        # print(nx.adjacency_matrix(self.G).todense()[0:6, 0:6])
+        # print(transition_mat[0:6, 0:6])
+        # print(nx.adjacency_matrix(self.G).todense()==transition_mat)
+
+    # alias sampling for ABRW-------------------------
     def simulate_walks(self, num_walks, walk_length):
-        self.P_G = nx.to_networkx_graph(self.P, create_using=nx.DiGraph())  # create a new nx graph based on ABRW transition prob matrix
         global P_G
-        P_G = self.P_G
+        P_G = self.G
+        
         t1 = time.time()
-        self.preprocess_transition_probs()  # note: we simply adapt node2vec
+        self.preprocess_transition_probs(G=self.G)  # construct alias table; adapted from node2vec
         t2 = time.time()
+
         global alias_nodes
         alias_nodes = self.alias_nodes
-        print('Time for construct alias table: {:.2f}'.format(t2-t1))
+        print(f'Time for construct alias table: {(t2-t1):.2f}')
+        
         walks = []
-        nodes = list(self.P_G.nodes())
+        nodes = list(self.G.nodes())
         print('Walk iteration:')
         pool = multiprocessing.Pool(self.workers)
         for walk_iter in range(num_walks):
             print(str(walk_iter+1), '/', str(num_walks))
-            # random.shuffle(nodes)
+            random.shuffle(nodes)
             walks += pool.map(functools.partial(node2vec_walk, walk_length=walk_length), nodes)
         pool.close()
         pool.join()
@@ -64,8 +64,7 @@ class BiasedWalker:  # ------ our method
                 walks[i][j] = self.look_back_list[int(walks[i][j])]
         return walks
 
-    def preprocess_transition_probs(self):
-        G = self.P_G
+    def preprocess_transition_probs(self, G):
         alias_nodes = {}
         nodes = G.nodes()
 
@@ -93,13 +92,12 @@ def node2vec_walk(start_node, walk_length):  # to do...
 
 def get_alias_node(node):
     global P_G
-    unnormalized_probs = [P_G[node][nbr]['weight'] for nbr in P_G.neighbors(node)]
-    norm_const = sum(unnormalized_probs)
-    normalized_probs = [float(u_prob)/norm_const for u_prob in unnormalized_probs]
-    return alias_setup(normalized_probs)
-
+    probs = [P_G[node][nbr]['weight'] for nbr in P_G.neighbors(node)]
+    return alias_setup(probs)
 
 # ===========================================deepWalk-walker============================================
+
+
 class BasicWalker:
     def __init__(self, G, workers):
         self.G = G.G
@@ -235,8 +233,8 @@ class Walker:
         triads = {}
 
         look_up_dict = self.look_up_dict
-        node_size = self.node_size
-        for edge in G.edges():
+        node_size = self.node_size    #to do... node2vec directed and undirected
+        for edge in G.edges():        #https://github.com/aditya-grover/node2vec/blob/master/src/node2vec.py
             alias_edges[edge] = self.get_alias_edge(edge[0], edge[1])
 
         self.alias_nodes = alias_nodes

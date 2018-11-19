@@ -5,7 +5,7 @@ STEP2: prepare data -->
 STEP3: learn node embeddings -->
 STEP4: downstream evaluations
 
-python src/main.py --method abrw --save-emb True
+python src/main.py --method abrw --save-emb False
 
 by Chengbin Hou 2018 <chengbin.hou10@foxmail.com>
 '''
@@ -71,15 +71,17 @@ def parse_args():
     parser.add_argument('--ABRW-topk', default=30, type=int,
                         help='select the most attr similar top k nodes of a node; ranging [0, # of nodes]') 
     parser.add_argument('--ABRW-alpha', default=0.8, type=float,
-                        help='balance struc and attr info; ranging [0, 1]') 
-    parser.add_argument('--TADW-lamb', default=0.2, type=float,
-                        help='balance struc and attr info; ranging [0, inf]')       
+                        help='balance struc and attr info; ranging [0, 1]')       
     parser.add_argument('--AANE-lamb', default=0.05, type=float,
                         help='balance struc and attr info; ranging [0, inf]')
     parser.add_argument('--AANE-rho', default=5, type=float,
                         help='penalty parameter; ranging [0, inf]')
-    parser.add_argument('--AANE-mode', default='comb', type=str, 
-                        help='choices of mode: comb, pure')  
+    parser.add_argument('--AANE-maxiter', default=10, type=int,
+                        help='max iter')
+    parser.add_argument('--TADW-lamb', default=0.2, type=float,
+                        help='balance struc and attr info; ranging [0, inf]') 
+    parser.add_argument('--TADW-maxiter', default=10, type=int,
+                        help='max iter') 
     parser.add_argument('--ASNE-lamb', default=1.0, type=float,
                         help='balance struc and attr info; ranging [0, inf]')
     parser.add_argument('--AttrComb-mode', default='concat', type=str,
@@ -122,7 +124,7 @@ def parse_args():
 
 def main(args):
     g = Graph() #see graph.py for commonly-used APIs and use g.G to access NetworkX APIs
-    print('\nSummary of all settings: ', args)
+    print(f'Summary of all settings: {args}')
 
 
     #---------------------------------------STEP1: load data-----------------------------------------------------
@@ -142,7 +144,7 @@ def main(args):
     #load node label info------
     #to do... similar to attribute {'key_attribute': value}, label also loaded as {'key_label': value}
     t2 = time.time()
-    print('STEP1: end loading data; time cost: {:.2f}s'.format(t2-t1))
+    print(f'STEP1: end loading data; time cost: {(t2-t1):.2f}s')
 
 
     #---------------------------------------STEP2: prepare data----------------------------------------------------
@@ -154,34 +156,36 @@ def main(args):
         edges_removed = g.remove_edge(ratio=args.link_remove)
         test_node_pairs, test_edge_labels = generate_edges_for_linkpred(graph=g, edges_removed=edges_removed, balance_ratio=1.0)
     t2 = time.time()
-    print('STEP2: end preparing data; time cost: {:.2f}s'.format(t2-t1))
+    print(f'STEP2: end preparing data; time cost: {(t2-t1):.2f}s')
 
 
     #-----------------------------------STEP3: upstream embedding task-------------------------------------------------
     print('\nSTEP3: start learning embeddings......')
-    print('the graph: ', args.graph_file, '\nthe # of nodes: ', g.get_num_nodes(), '\nthe # of edges used during embedding (edges maybe removed if lp task): ', g.get_num_edges(),
-            '\nthe # of isolated nodes: ', g.get_num_isolates(), '\nis directed graph: ', g.get_isdirected(), '\nthe model used: ', args.method)
+    print(f'the graph: {args.graph_file}; \nthe model used: {args.method}; \
+            \nthe # of edges used during embedding (edges maybe removed if lp task): {g.get_num_edges()}; \
+            \nthe # of nodes: {g.get_num_nodes()}; \nthe # of isolated nodes: {g.get_num_isolates()}; \nis directed graph: {g.get_isdirected()}')
     t1 = time.time()
     model = None
     if args.method == 'abrw': 
-        model = abrw.ABRW(graph=g, dim=args.dim, alpha=args.ABRW_alpha, topk=args.ABRW_topk, num_paths=args.number_walks,
-                            path_length=args.walk_length, workers=args.workers, window=args.window_size)
+        model = abrw.ABRW(graph=g, dim=args.dim, alpha=args.ABRW_alpha, topk=args.ABRW_topk, number_walks=args.number_walks,
+                            walk_length=args.walk_length, window=args.window_size, workers=args.workers)
+    elif args.method == 'aane':
+        model = aane.AANE(graph=g, dim=args.dim, lambd=args.AANE_lamb, rho=args.AANE_rho, maxiter=args.AANE_maxiter, 
+                            mode='comb') #mode: 'comb' struc and attri or 'pure' struc
+    elif args.method == 'tadw':
+        model = tadw.TADW(graph=g, dim=args.dim, lamb=args.TADW_lamb, maxiter=args.TADW_maxiter)
     elif args.method == 'attrpure':
-        model = attrpure.ATTRPURE(graph=g, dim=args.dim)
+        model = attrpure.ATTRPURE(graph=g, dim=args.dim, mode='pca')  #mode: pca or svd
     elif args.method == 'attrcomb':
-        model = attrcomb.ATTRCOMB(graph=g, dim=args.dim, comb_with='deepwalk',
-                                     num_paths=args.number_walks, comb_method=args.AttrComb_mode)  #concat, elementwise-mean, elementwise-max
+        model = attrcomb.ATTRCOMB(graph=g, dim=args.dim, comb_with='deepwalk', number_walks=args.number_walks, walk_length=args.walk_length,
+                                    window=args.window_size, workers=args.workers, comb_method=args.AttrComb_mode)  #comb_method: concat, elementwise-mean, elementwise-max
     elif args.method == 'asne':
         if args.task == 'nc':
             model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
                              X_test=None, Y_test=None, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
         else:
             model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
-                             X_test=X_test_lp, Y_test=Y_test_lp, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
-    elif args.method == 'aane':
-        model = aane.AANE(graph=g, dim=args.dim, lambd=args.AANE_lamb, mode=args.AANE_mode)
-    elif args.method == 'tadw':
-        model = tadw.TADW(graph=g, dim=args.dim, lamb=args.TADW_lamb)
+                             X_test=test_node_pairs, Y_test=test_edge_labels, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
     elif args.method == 'deepwalk':
         model = node2vec.Node2vec(graph=g, path_length=args.walk_length,
                                  num_paths=args.number_walks, dim=args.dim,
@@ -219,14 +223,13 @@ def main(args):
     '''
     if args.save_emb:
         model.save_embeddings(args.emb_file + time.strftime(' %Y%m%d-%H%M%S', time.localtime()))
-        print('Save node embeddings in file: ', args.emb_file)
+        print(f'Save node embeddings in file: {args.emb_file}')
     t2 = time.time()
-    print('STEP3: end learning embeddings; time cost: {:.2f}s'.format(t2-t1))
+    print(f'STEP3: end learning embeddings; time cost: {(t2-t1):.2f}s')
 
 
     #---------------------------------------STEP4: downstream task-----------------------------------------------
     print('\nSTEP4: start evaluating ......: ')
-    print('nc for node classification tasks; lp for link prediction task', args.task)
     t1 = time.time()
     if args.method != 'semi_supervised_gcn':  #except semi-supervised methods, we will get emb first, and then eval emb
         vectors = 0
@@ -237,22 +240,25 @@ def main(args):
         del model, g           
         #------lp task
         if args.task == 'lp' or args.task == 'lp_and_nc':
-            #X_test_lp, Y_test_lp = read_edge_label(args.label_file)  #enable this if you want to load your own lp testing data, see classfiy.py
-            print('During embedding we have used {:.2f}% links and the remaining will be left for lp evaluation...'.format(args.link_remove*100))
+            #X_test_lp, Y_test_lp = read_edge_label(args.label_file)  #if you want to load your own lp testing data
+            print(f'Link Prediction task; the percentage of positive links for testing: {(args.link_remove*100):.2f}%'
+                    + ' (by default, also generate equal negative links for testing)')
             clf = lpClassifier(vectors=vectors)     #similarity/distance metric as clf; basically, lp is a binary clf probelm
             clf.evaluate(test_node_pairs, test_edge_labels)
         #------nc task
         if args.task == 'nc' or args.task == 'lp_and_nc':
             X, Y = read_node_label(args.label_file)
-            print('Training nc classifier using {:.2f}% node labels...'.format(args.label_reserved*100))
+            print(f'Node Classification task; the percentage of labels for testing: {((1-args.label_reserved)*100):.2f}%')
             clf = ncClassifier(vectors=vectors, clf=LogisticRegression())   #use Logistic Regression as clf; we may choose SVM or more advanced ones
             clf.split_train_evaluate(X, Y, args.label_reserved)
     t2 = time.time()
-    print('STEP4: end evaluating; time cost: {:.2f}s'.format(t2-t1))
+    print(f'STEP4: end evaluating; time cost: {(t2-t1):.2f}s')
 
 
 if __name__ == '__main__':
+    print(f'------ START @ {time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime())} ------')
     #random.seed(2018)
-    #np.random.seed(2018)    
+    #np.random.seed(2018)
     main(parse_args())
+    print(f'------ END @ {time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime())} ------')
 

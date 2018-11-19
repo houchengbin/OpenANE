@@ -1,16 +1,16 @@
-# -*- coding: utf-8 -*-
+"""
+ANE method: Accelerated Attributed Network Embedding (AANE)
+
+modified by Chengbin Hou 2018
+
+originally from https://github.com/xhuang31/AANE_Python
+"""
+
 import numpy as np
 from scipy import sparse
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import svds
 from math import ceil
-
-'''
-#-----------------------------------------------------------------------------
-# modified by Chengbin Hou 2018
-# part of code was originally forked from https://github.com/xhuang31/AANE_Python
-#-----------------------------------------------------------------------------
-'''
 
 class AANE:
     """Jointly embed Net and Attri into embedding representation H
@@ -31,36 +31,36 @@ class AANE:
     Copyright 2017 & 2018, Xiao Huang and Jundong Li.
     $Revision: 1.0.2 $  $Date: 2018/02/19 00:00:00 $
     """
-    def __init__(self, graph, dim=100, lambd=0.05, rho=5, mode='comb', *varargs):  #paper said lambd should not too large; suggest [0, 0.1]; lambd=0 -> attrpure
-        self.d = dim
-        self.look_back_list = graph.look_back_list #look back node id for A and X
+    def __init__(self, graph, dim, lambd=0.05, rho=5, maxiter=5, mode='comb', *varargs):
+        self.dim = dim
+        self.look_back_list = graph.look_back_list #look back node id for Net and Attr
+        self.lambd = lambd  # Initial regularization parameter
+        self.rho = rho  # Initial penalty parameter
+        self.maxiter = maxiter  # Max num of iteration
+        splitnum = 1  # number of pieces we split the SA for limited cache
         if mode == 'comb':
             print('==============AANE-comb mode: jointly learn emb from both structure and attribute info========')
-            Net = sparse.csr_matrix(graph.getA())
-            Attri = sparse.csr_matrix(graph.getX())
+            Net = graph.get_adj_mat()
+            Attri = graph.get_attr_mat()
         elif mode == 'pure':
-            print('======================AANE-pure mode: learn emb from structure info purely====================')
-            Net = graph.getA()
+            print('======================AANE-pure mode: learn emb purely from structure info====================')
+            Net = graph.get_adj_mat()
             Attri = Net
         else:
             exit(0)
         
-        self.maxiter = 2  # Max num of iteration
         [self.n, m] = Attri.shape  # n = Total num of nodes, m = attribute category num
         Net = sparse.lil_matrix(Net)
         Net.setdiag(np.zeros(self.n))
         Net = csc_matrix(Net)
         Attri = csc_matrix(Attri)
-        self.lambd = 0.05  # Initial regularization parameter
-        self.rho = 5  # Initial penalty parameter
-        splitnum = 1  # number of pieces we split the SA for limited cache
         if len(varargs) >= 4 and varargs[3] == 'Att':
             sumcol = np.arange(m)
             np.random.shuffle(sumcol)
-            self.H = svds(Attri[:, sumcol[0:min(10 * d, m)]], d)[0]
+            self.H = svds(Attri[:, sumcol[0:min(10 * self.dim, m)]], self.dim)[0]
         else:
             sumcol = Net.sum(0)
-            self.H = svds(Net[:, sorted(range(self.n), key=lambda k: sumcol[0, k], reverse=True)[0:min(10 * self.d, self.n)]], self.d)[0]
+            self.H = svds(Net[:, sorted(range(self.n), key=lambda k: sumcol[0, k], reverse=True)[0:min(10 * self.dim, self.n)]], self.dim)[0]
 
         if len(varargs) > 0:
             self.lambd = varargs[0]
@@ -75,17 +75,17 @@ class AANE:
             self.Attri = Attri.transpose() * sparse.diags(np.ravel(np.power(Attri.power(2).sum(1), -0.5)))
         self.Z = self.H.copy()
         self.affi = -1  # Index for affinity matrix sa
-        self.U = np.zeros((self.n, self.d))
+        self.U = np.zeros((self.n, self.dim))
         self.nexidx = np.split(Net.indices, Net.indptr[1:-1])
         self.Net = np.split(Net.data, Net.indptr[1:-1])
 
         self.vectors = {}
-        self.function()  #run aane
+        self.function()  #run aane----------------------------
 
 
     '''################# Update functions #################'''
     def updateH(self):
-        xtx = np.dot(self.Z.transpose(), self.Z) * 2 + self.rho * np.eye(self.d)
+        xtx = np.dot(self.Z.transpose(), self.Z) * 2 + self.rho * np.eye(self.dim)
         for blocki in range(self.splitnum):  # Split nodes into different Blocks
             indexblock = self.block * blocki  # Index for splitting blocks
             if self.affi != blocki:
@@ -99,14 +99,14 @@ class AANE:
                     nzidx = normi_j != 0  # Non-equal Index
                     if np.any(nzidx):
                         normi_j = (self.lambd * self.Net[i][nzidx]) / normi_j[nzidx]
-                        self.H[i, :] = np.linalg.solve(xtx + normi_j.sum() * np.eye(self.d), sums[i - indexblock, :] + (
+                        self.H[i, :] = np.linalg.solve(xtx + normi_j.sum() * np.eye(self.dim), sums[i - indexblock, :] + (
                                     neighbor[nzidx, :] * normi_j.reshape((-1, 1))).sum(0) + self.rho * (
                                                                    self.Z[i, :] - self.U[i, :]))
                     else:
                         self.H[i, :] = np.linalg.solve(xtx, sums[i - indexblock, :] + self.rho * (
                                     self.Z[i, :] - self.U[i, :]))
     def updateZ(self):
-        xtx = np.dot(self.H.transpose(), self.H) * 2 + self.rho * np.eye(self.d)
+        xtx = np.dot(self.H.transpose(), self.H) * 2 + self.rho * np.eye(self.dim)
         for blocki in range(self.splitnum):  # Split nodes into different Blocks
             indexblock = self.block * blocki  # Index for splitting blocks
             if self.affi != blocki:
@@ -120,7 +120,7 @@ class AANE:
                     nzidx = normi_j != 0  # Non-equal Index
                     if np.any(nzidx):
                         normi_j = (self.lambd * self.Net[i][nzidx]) / normi_j[nzidx]
-                        self.Z[i, :] = np.linalg.solve(xtx + normi_j.sum() * np.eye(self.d), sums[i - indexblock, :] + (
+                        self.Z[i, :] = np.linalg.solve(xtx + normi_j.sum() * np.eye(self.dim), sums[i - indexblock, :] + (
                                     neighbor[nzidx, :] * normi_j.reshape((-1, 1))).sum(0) + self.rho * (
                                                                    self.H[i, :] + self.U[i, :]))
                     else:
@@ -130,10 +130,15 @@ class AANE:
     def function(self):
         self.updateH()
         '''################# Iterations #################'''
-        for __ in range(self.maxiter - 1):
+        for i in range(self.maxiter):
+            import time
+            t1=time.time()
             self.updateZ()
             self.U = self.U + self.H - self.Z
             self.updateH()
+            t2=time.time()
+            print(f'iter: {i+1}/{self.maxiter}; time cost {t2-t1:0.2f}s')
+
         #-------save emb to self.vectors and return
         ind = 0
         for id in self.look_back_list:

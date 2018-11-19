@@ -1,3 +1,26 @@
+#chengbin--------------------------
+# Windows:
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python:
+*.py[cod]
+*.so
+*.egg
+*.egg-info
+dist
+build
+__pycache__
+
+# My configurations:
+db.ini
+deploy_key_rsa
+log
+bash
+
+
+#zeyu--------------------------------
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

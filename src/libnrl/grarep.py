@@ -14,7 +14,7 @@ class GraRep(object):
 
     def getAdjMat(self):
         graph = self.g.G
-        node_size = self.g.node_size
+        node_size = self.g.get_num_nodes()
         look_up = self.g.look_up_dict
         adj = np.zeros((node_size, node_size))
         for edge in self.g.G.edges():
