@@ -1,10 +1,19 @@
+"""
+ANE method: Text Associated DeepWalk (TADW)
+
+modified by Chengbin Hou 2018
+
+originally from https://github.com/thunlp/OpenNE/blob/master/src/openne/line.py
+the main diff: adapt to our graph.py APIs; and use 'micro-F1' to find the best emb if auto_save
+"""
+
 from __future__ import print_function
 import random
 import math
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 import tensorflow as tf
-from .classify import ncClassifier, lpClassifier, read_node_label, read_edge_label
+from .classify import ncClassifier, lpClassifier, read_node_label, read_edge_label #to do... try use lpClassifier to choose best embeddings?
 
 
 class _LINE(object):
@@ -32,8 +41,8 @@ class _LINE(object):
         self.sign = tf.placeholder(tf.float32, [None])
 
         cur_seed = random.getrandbits(32)
-        self.embeddings = tf.get_variable(name="embeddings"+str(self.order), shape=[self.node_size, self.rep_size], initializer = tf.contrib.layers.xavier_initializer(uniform = False, seed=cur_seed))
-        self.context_embeddings = tf.get_variable(name="context_embeddings"+str(self.order), shape=[self.node_size, self.rep_size], initializer = tf.contrib.layers.xavier_initializer(uniform = False, seed=cur_seed))
+        self.embeddings = tf.get_variable(name="embeddings"+str(self.order), shape=[self.node_size, self.rep_size], initializer = tf.contrib.layers.xavier_initializer(uniform=False, seed=cur_seed))
+        self.context_embeddings = tf.get_variable(name="context_embeddings"+str(self.order), shape=[self.node_size, self.rep_size], initializer = tf.contrib.layers.xavier_initializer(uniform=False, seed=cur_seed))
         # self.h_e = tf.nn.l2_normalize(tf.nn.embedding_lookup(self.embeddings, self.h), 1)
         # self.t_e = tf.nn.l2_normalize(tf.nn.embedding_lookup(self.embeddings, self.t), 1)
         # self.t_e_context = tf.nn.l2_normalize(tf.nn.embedding_lookup(self.context_embeddings, self.t), 1)
@@ -61,7 +70,7 @@ class _LINE(object):
                 self.t : t,
                 self.sign : sign,
             }
-            _, cur_loss = self.sess.run([self.train_op, self.loss],feed_dict)
+            _, cur_loss = self.sess.run([self.train_op, self.loss], feed_dict)
             sum_loss += cur_loss
             batch_id += 1
         print('epoch:{} sum of loss:{!s}'.format(self.cur_epoch, sum_loss))
@@ -163,7 +172,7 @@ class _LINE(object):
             cur_large_block = large_block[num_large_block]
             self.edge_prob[cur_small_block] = norm_prob[cur_small_block]
             self.edge_alias[cur_small_block] = cur_large_block
-            norm_prob[cur_large_block] = norm_prob[cur_large_block] + norm_prob[cur_small_block] -1
+            norm_prob[cur_large_block] = norm_prob[cur_large_block] + norm_prob[cur_small_block]-1
             if norm_prob[cur_large_block] < 1:
                 small_block[num_small_block] = cur_large_block
                 num_small_block += 1
@@ -188,55 +197,57 @@ class _LINE(object):
             vectors[look_back[i]] = embedding
         return vectors
 
+
 class LINE(object):
 
-    def __init__(self, graph, rep_size=128, batch_size=1000, epoch=10, negative_ratio=5, order=3, label_file = None, clf_ratio = 0.5, auto_save = True):
+    def __init__(self, graph, rep_size=128, batch_size=1000, epoch=10, negative_ratio=5, order=3, label_file=None, clf_ratio=0.5, auto_save=True):
+        print('auto save the best embeddings', auto_save)
         self.rep_size = rep_size
         self.order = order
         self.best_result = 0
         self.vectors = {}
-        if order == 3:
+        self.g = graph
+        
+        if not self.g.get_isweighted(): #add equal weights 1.0 to all existing edges
+            self.g.add_edge_weight(equal_weight=1.0) #add 'weight' to networkx graph
+
+        if order == 3: #if order 3 i.e. concat embeddings by 1 and 2
             self.model1 = _LINE(graph, rep_size/2, batch_size, negative_ratio, order=1)
             self.model2 = _LINE(graph, rep_size/2, batch_size, negative_ratio, order=2)
             for i in range(epoch):
                 self.model1.train_one_epoch()
                 self.model2.train_one_epoch()
-                '''
                 if label_file:
                     self.get_embeddings()
                     X, Y = read_node_label(label_file)
                     print("Training classifier using {:.2f}% nodes...".format(clf_ratio*100))
-                    clf = Classifier(vectors=self.vectors, clf=LogisticRegression())
+                    clf = ncClassifier(vectors=self.vectors, clf=LogisticRegression())
                     result = clf.split_train_evaluate(X, Y, clf_ratio)
 
-                    if result['macro'] > self.best_result:
-                        self.best_result = result['macro']
+                    if result['micro'] > self.best_result:
+                        self.best_result = result['micro']
                         if auto_save:
                             self.best_vector = self.vectors
-                '''
 
-        else:
+        else: #if order 1 or 2
             self.model = _LINE(graph, rep_size, batch_size, negative_ratio, order=self.order)
             for i in range(epoch):
                 self.model.train_one_epoch()
-                '''
                 if label_file:
                     self.get_embeddings()
                     X, Y = read_node_label(label_file)
                     print("Training classifier using {:.2f}% nodes...".format(clf_ratio*100))
-                    clf = Classifier(vectors=self.vectors, clf=LogisticRegression())
+                    clf = ncClassifier(vectors=self.vectors, clf=LogisticRegression())
                     result = clf.split_train_evaluate(X, Y, clf_ratio)
 
-                    if result['macro'] > self.best_result:
-                        self.best_result = result['macro']
+                    if result['micro'] > self.best_result:
+                        self.best_result = result['micro']
                         if auto_save:
                             self.best_vector = self.vectors
-                '''
 
         self.get_embeddings()
         if auto_save and label_file:
-            #self.vectors = self.best_vector
-            pass
+            self.vectors = self.best_vector
 
     def get_embeddings(self):
         self.last_vectors = self.vectors

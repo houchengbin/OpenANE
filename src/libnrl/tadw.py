@@ -4,6 +4,7 @@ ANE method: Text Associated DeepWalk (TADW)
 modified by Chengbin Hou 2018
 
 originally from https://github.com/thunlp/OpenNE/blob/master/src/openne/tadw.py
+the main diff: adapt to our graph.py APIs
 to do... sparse computation and remove unnecessary self vars; 
 otherwise, not scalable to large network;
 """
