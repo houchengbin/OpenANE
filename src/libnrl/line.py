@@ -200,8 +200,8 @@ class _LINE(object):
 
 class LINE(object):
 
-    def __init__(self, graph, rep_size=128, batch_size=1000, epoch=10, negative_ratio=5, order=3, label_file=None, clf_ratio=0.5, auto_save=True):
-        print('auto save the best embeddings', auto_save)
+    def __init__(self, graph, rep_size=128, batch_size=1000, epoch=10, negative_ratio=5, order=3, label_file=None, clf_ratio=0.5, auto_save=True, best='micro'):
+        print('auto save the best embeddings: ', auto_save, ' by looking at: ', best, '-F1')
         self.rep_size = rep_size
         self.order = order
         self.best_result = 0
@@ -224,8 +224,8 @@ class LINE(object):
                     clf = ncClassifier(vectors=self.vectors, clf=LogisticRegression())
                     result = clf.split_train_evaluate(X, Y, clf_ratio)
 
-                    if result['micro'] > self.best_result:
-                        self.best_result = result['micro']
+                    if result[best] > self.best_result:
+                        self.best_result = result[best]
                         if auto_save:
                             self.best_vector = self.vectors
 
@@ -240,8 +240,8 @@ class LINE(object):
                     clf = ncClassifier(vectors=self.vectors, clf=LogisticRegression())
                     result = clf.split_train_evaluate(X, Y, clf_ratio)
 
-                    if result['micro'] > self.best_result:
-                        self.best_result = result['micro']
+                    if result[best] > self.best_result:
+                        self.best_result = result[best]
                         if auto_save:
                             self.best_vector = self.vectors
 
