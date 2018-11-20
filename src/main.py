@@ -91,7 +91,7 @@ def parse_args():
     parser.add_argument('--Node2Vec-q', default=0.5, type=float,
                         help='trade-off BFS and DFS; rid search [0.25; 0.50; 1; 2; 4]')
     parser.add_argument('--GraRep-kstep', default=4, type=int,
-                        help='use k-step transition probability matrix')
+                        help='use k-step transition probability matrix, error if dim%Kstep!=0')
     parser.add_argument('--LINE-order', default=3, type=int, 
                         help='choices of the order(s), 1st order, 2nd order, 1st+2nd order')
     parser.add_argument('--LINE-no-auto-save', action='store_true',

@@ -1,7 +1,16 @@
+"""
+a matrix factorization based NE method: GraRep
+
+modified by Chengbin Hou 2018
+
+originally from https://github.com/thunlp/OpenNE/blob/master/src/openne/grarep.py
+"""
+
 import math
 import numpy as np
 from numpy import linalg as la
 from sklearn.preprocessing import normalize
+from .utils import row_as_probdist
 
 class GraRep(object):
     
@@ -13,6 +22,7 @@ class GraRep(object):
         self.train()
 
     def getAdjMat(self):
+        '''
         graph = self.g.G
         node_size = self.g.get_num_nodes()
         look_up = self.g.look_up_dict
@@ -22,6 +32,9 @@ class GraRep(object):
             adj[look_up[edge[1]]][look_up[edge[0]]] = 1.0
         # ScaleSimMat
         return np.matrix(adj/np.sum(adj, axis=1))
+        '''
+        adj = self.g.get_adj_mat() #for isolated node row, normalize to [1/n, 1/n, ...]
+        return row_as_probdist(adj, dense_output=True, preserve_zeros=False)
 
     def GetProbTranMat(self, Ak):
         probTranMat = np.log(Ak/np.tile(
