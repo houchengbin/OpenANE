@@ -85,11 +85,10 @@ def construct_placeholders():
     }
     return placeholders
 
-
-def train(train_data, test_data=None, model='graphsage_mean'):
+def train(train_data, test_data, model):
     print('---------- the graphsage model we used: ', model)
-    print('---------- parameters we sued: epochs, dim_1+dim_2, samples_1, samples_2, dropout, weight_decay, learning_rate, batch_size, normalize', 
-            epochs, dim_1+dim_2, samples_1, samples_2, dropout, weight_decay, learning_rate, batch_size, normalize)
+    print('---------- parameters we sued: epochs, dim_1+dim_2, samples_1, samples_2, dropout, weight_decay, learning_rate, batch_size', 
+            epochs, dim_1+dim_2, samples_1, samples_2, dropout, weight_decay, learning_rate, batch_size)
     G = train_data[0]
     features = train_data[1]  #note: features are in order of graph.look_up_list, since id_map = {k: v for v, k in enumerate(graph.look_back_list)}
     id_map = train_data[2]
@@ -110,7 +109,7 @@ def train(train_data, test_data=None, model='graphsage_mean'):
     adj_info_ph = tf.placeholder(tf.int32, shape=minibatch.adj.shape)
     adj_info = tf.Variable(adj_info_ph, trainable=False, name="adj_info")
 
-    if model == 'graphsage_mean':
+    if model == 'mean':
         # Create model
         sampler = UniformNeighborSampler(adj_info)
         layer_infos = [SAGEInfo("node", sampler, samples_1, dim_1),
@@ -141,7 +140,7 @@ def train(train_data, test_data=None, model='graphsage_mean'):
                                      concat=False,
                                      logging=True)
 
-    elif model == 'graphsage_seq':  #LSTM as stated in paper? very slow anyway...
+    elif model == 'seq':  #LSTM as stated in paper? very slow anyway...
         sampler = UniformNeighborSampler(adj_info)
         layer_infos = [SAGEInfo("node", sampler, samples_1, dim_1),
                             SAGEInfo("node", sampler, samples_2, dim_2)]
@@ -156,7 +155,7 @@ def train(train_data, test_data=None, model='graphsage_mean'):
                                      model_size=model_size,
                                      logging=True)
 
-    elif model == 'graphsage_maxpool':
+    elif model == 'maxpool':
         sampler = UniformNeighborSampler(adj_info)
         layer_infos = [SAGEInfo("node", sampler, samples_1, dim_1),
                             SAGEInfo("node", sampler, samples_2, dim_2)]
@@ -170,7 +169,7 @@ def train(train_data, test_data=None, model='graphsage_mean'):
                                      model_size=model_size,
                                      identity_dim = identity_dim,
                                      logging=True)
-    elif model == 'graphsage_meanpool':
+    elif model == 'meanpool':
         sampler = UniformNeighborSampler(adj_info)
         layer_infos = [SAGEInfo("node", sampler, samples_1, dim_1),
                             SAGEInfo("node", sampler, samples_2, dim_2)]

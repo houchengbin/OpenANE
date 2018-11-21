@@ -5,7 +5,7 @@ STEP2: prepare data -->
 STEP3: learn node embeddings -->
 STEP4: downstream evaluations
 
-python src/main.py --method abrw --save-emb False
+python src/main.py --method abrw
 
 by Chengbin Hou 2018 <chengbin.hou10@foxmail.com>
 '''
@@ -65,8 +65,9 @@ def parse_args():
     parser.add_argument('--emb-file', default='emb/unnamed_node_embs.txt',
                         help='node embeddings file; suggest: data_method_dim_embs.txt')
     #-------------------------------------------------method settings-----------------------------------------------------------
-    parser.add_argument('--method', default='abrw', choices=['node2vec', 'deepwalk', 'line', 'gcn', 'grarep', 'tadw',
-                                                            'abrw', 'asne', 'aane', 'attrpure', 'attrcomb', 'graphsage'],
+    parser.add_argument('--method', default='abrw', choices=['deepwalk', 'node2vec', 'line', 'grarep',
+                                                            'abrw', 'attrpure', 'attrcomb', 'tadw', 'aane', 
+                                                            'sagemean','sagegcn', 'gcn', 'asne'],
                         help='choices of Network Embedding methods')
     parser.add_argument('--ABRW-topk', default=30, type=int,
                         help='select the most attr similar top k nodes of a node; ranging [0, # of nodes]') 
@@ -134,8 +135,8 @@ def main(args):
     elif args.graph_format == 'edgelist':
         g.read_edgelist(path=args.graph_file, weighted=args.weighted, directed=args.directed)
     #load node attribute info------
-    is_ane = (args.method == 'abrw' or args.method == 'tadw' or args.method == 'gcn' or args.method == 'graphsage' or
-                 args.method == 'attrpure' or args.method == 'attrcomb' or args.method == 'asne' or args.method == 'aane')
+    is_ane = (args.method == 'abrw' or args.method == 'tadw' or args.method == 'gcn' or args.method == 'sagemean' or args.method == 'sagegcn' or
+                args.method == 'attrpure' or args.method == 'attrcomb' or args.method == 'asne' or args.method == 'aane')
     if is_ane:
         assert args.attribute_file != ''
         g.read_node_attr(args.attribute_file)
@@ -188,6 +189,12 @@ def main(args):
     elif args.method == 'line': #if auto_save, use label to justifiy the best embeddings by looking at micro / macro-F1 score
         model = line.LINE(graph=g, epoch = args.epochs, rep_size=args.dim, order=args.LINE_order, batch_size=args.batch_size, negative_ratio=args.LINE_negative_ratio,
                         label_file=args.label_file, clf_ratio=args.label_reserved, auto_save=True, best='micro')
+
+    elif args.method == 'sagemean': #other choices: graphsage_seq, graphsage_maxpool, graphsage_meanpool, n2v
+        model = graphsageAPI.graphSAGE(graph=g, sage_model='mean', is_supervised=False)
+    elif args.method == 'sagegcn':  #parameters for graphsage models are in 'graphsage' -> '__init__.py'
+        model = graphsageAPI.graphSAGE(graph=g, sage_model='gcn', is_supervised=False)
+
     elif args.method == 'asne':
         if args.task == 'nc':
             model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
@@ -195,53 +202,46 @@ def main(args):
         else:
             model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
                              X_test=test_node_pairs, Y_test=test_edge_labels, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
-    elif args.method == 'graphsage': #we follow the default parameters, see __inti__.py in graphsage file
-        model = graphsageAPI.graphsage_unsupervised_train(graph=g, graphsage_model = 'graphsage_mean')
-    elif args.method == 'gcn':
-        model = graphsageAPI.graphsage_unsupervised_train(graph=g, graphsage_model = 'gcn') #graphsage-gcn
     else:
-        print('no method was found...')
+        print('method not found...')
         exit(0)
-    '''
-    elif args.method == 'gcn':   #OR use graphsage-gcn as in graphsage method...
-        assert args.label_file != ''        #must have node label
-        assert args.feature_file != ''      #different from previous ANE methods
-        g.read_node_label(args.label_file)  #gcn is an end-to-end supervised ANE methoed
-        model = gcnAPI.GCN(graph=g, dropout=args.dropout,
-                            weight_decay=args.weight_decay, hidden1=args.hidden,
-                            epochs=args.epochs, clf_ratio=args.label_reserved)
-        #gcn does not have model.save_embeddings() func
-    '''
+    t2 = time.time()
+    print(f'STEP3: end learning embeddings; time cost: {(t2-t1):.2f}s')
+
     if args.save_emb:
         model.save_embeddings(args.emb_file + time.strftime(' %Y%m%d-%H%M%S', time.localtime()))
         print(f'Save node embeddings in file: {args.emb_file}')
-    t2 = time.time()
-    print(f'STEP3: end learning embeddings; time cost: {(t2-t1):.2f}s')
+
+    ''' 
+    #to do.... semi-supervised methods: gcn, graphsage, etc...
+    if args.method == 'gcn':   #semi-supervised gcn
+        assert args.label_file != ''        #must have node label
+        assert args.feature_file != ''      #different from previous ANE methods
+        g.read_node_label(args.label_file)  #gcn is an end-to-end supervised ANE methoed
+        model = gcnAPI.GCN(graph=g, dropout=args.dropout, weight_decay=args.weight_decay, hidden1=args.hidden, epochs=args.epochs, clf_ratio=args.label_reserved)
+        print('semi-supervsied method, no embs, exit the program...') #semi-supervised gcn do not produce embs
+        exit(0)
+    '''
 
 
     #---------------------------------------STEP4: downstream task-----------------------------------------------
     print('\nSTEP4: start evaluating ......: ')
     t1 = time.time()
-    if args.method != 'semi_supervised_gcn':  #except semi-supervised methods, we will get emb first, and then eval emb
-        vectors = 0
-        if args.method == 'graphsage' or args.method == 'gcn':  #to do... run without this 'if'
-            vectors = model                       
-        else:
-            vectors = model.vectors #for other methods....
-        del model, g           
-        #------lp task
-        if args.task == 'lp' or args.task == 'lp_and_nc':
-            #X_test_lp, Y_test_lp = read_edge_label(args.label_file)  #if you want to load your own lp testing data
-            print(f'Link Prediction task; the percentage of positive links for testing: {(args.link_remove*100):.2f}%'
-                    + ' (by default, also generate equal negative links for testing)')
-            clf = lpClassifier(vectors=vectors)     #similarity/distance metric as clf; basically, lp is a binary clf probelm
-            clf.evaluate(test_node_pairs, test_edge_labels)
-        #------nc task
-        if args.task == 'nc' or args.task == 'lp_and_nc':
-            X, Y = read_node_label(args.label_file)
-            print(f'Node Classification task; the percentage of labels for testing: {((1-args.label_reserved)*100):.2f}%')
-            clf = ncClassifier(vectors=vectors, clf=LogisticRegression())   #use Logistic Regression as clf; we may choose SVM or more advanced ones
-            clf.split_train_evaluate(X, Y, args.label_reserved)
+    vectors = model.vectors
+    del model, g
+    #------lp task
+    if args.task == 'lp' or args.task == 'lp_and_nc':
+        #X_test_lp, Y_test_lp = read_edge_label(args.label_file)  #if you want to load your own lp testing data
+        print(f'Link Prediction task; the percentage of positive links for testing: {(args.link_remove*100):.2f}%'
+                + ' (by default, also generate equal negative links for testing)')
+        clf = lpClassifier(vectors=vectors)     #similarity/distance metric as clf; basically, lp is a binary clf probelm
+        clf.evaluate(test_node_pairs, test_edge_labels)
+    #------nc task
+    if args.task == 'nc' or args.task == 'lp_and_nc':
+        X, Y = read_node_label(args.label_file)
+        print(f'Node Classification task; the percentage of labels for testing: {((1-args.label_reserved)*100):.2f}%')
+        clf = ncClassifier(vectors=vectors, clf=LogisticRegression())   #use Logistic Regression as clf; we may choose SVM or more advanced ones
+        clf.split_train_evaluate(X, Y, args.label_reserved)
     t2 = time.time()
     print(f'STEP4: end evaluating; time cost: {(t2-t1):.2f}s')
 
