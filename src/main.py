@@ -194,14 +194,8 @@ def main(args):
         model = graphsageAPI.graphSAGE(graph=g, sage_model='mean', is_supervised=False)
     elif args.method == 'sagegcn':  #parameters for graphsage models are in 'graphsage' -> '__init__.py'
         model = graphsageAPI.graphSAGE(graph=g, sage_model='gcn', is_supervised=False)
-
     elif args.method == 'asne':
-        if args.task == 'nc':
-            model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
-                             X_test=None, Y_test=None, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
-        else:
-            model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
-                             X_test=test_node_pairs, Y_test=test_edge_labels, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
+        model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, learning_rate=args.learning_rate, batch_size=args.batch_size, epoch=args.epochs, n_neg_samples=10)
     else:
         print('method not found...')
         exit(0)
@@ -215,9 +209,9 @@ def main(args):
     ''' 
     #to do.... semi-supervised methods: gcn, graphsage, etc...
     if args.method == 'gcn':   #semi-supervised gcn
-        assert args.label_file != ''        #must have node label
-        assert args.feature_file != ''      #different from previous ANE methods
-        g.read_node_label(args.label_file)  #gcn is an end-to-end supervised ANE methoed
+        assert args.label_file != '' 
+        assert args.feature_file != '' 
+        g.read_node_label(args.label_file)
         model = gcnAPI.GCN(graph=g, dropout=args.dropout, weight_decay=args.weight_decay, hidden1=args.hidden, epochs=args.epochs, clf_ratio=args.label_reserved)
         print('semi-supervsied method, no embs, exit the program...') #semi-supervised gcn do not produce embs
         exit(0)
