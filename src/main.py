@@ -43,11 +43,7 @@ def parse_args():
     parser.add_argument('--attribute-file', default='data/cora/cora_attr.txt',
                         help='node attribute/feature file')
     parser.add_argument('--label-file', default='data/cora/cora_label.txt',
-                        help='node label file') 
-    parser.add_argument('--emb-file', default='emb/unnamed_node_embs.txt',
-                        help='node embeddings file; suggest: data_method_dim_embs.txt')
-    parser.add_argument('--save-emb', default=False, type=bool,
-                        help='save emb to disk if True')       
+                        help='node label file')     
     parser.add_argument('--dim', default=128, type=int,
                         help='node embeddings dimensions')
     parser.add_argument('--task', default='lp_and_nc', choices=['none', 'lp', 'nc', 'lp_and_nc'],
@@ -60,10 +56,14 @@ def parse_args():
     #                    help='for lp task, train/test split, a ratio ranging [0.0, 1.0]')
     parser.add_argument('--label-reserved', default=0.7, type=float,
                         help='for nc task, train/test split, a ratio ranging [0.0, 1.0]')
-    parser.add_argument('--directed', default=False, type=bool,
+    parser.add_argument('--directed', default=False, action='store_true',
                         help='directed or undirected graph')
-    parser.add_argument('--weighted', default=False, type=bool,
+    parser.add_argument('--weighted', default=False, action='store_true',
                         help='weighted or unweighted graph')
+    parser.add_argument('--save-emb', default=False, action='store_true',
+                        help='save emb to disk if True')
+    parser.add_argument('--emb-file', default='emb/unnamed_node_embs.txt',
+                        help='node embeddings file; suggest: data_method_dim_embs.txt')
     #-------------------------------------------------method settings-----------------------------------------------------------
     parser.add_argument('--method', default='abrw', choices=['node2vec', 'deepwalk', 'line', 'gcn', 'grarep', 'tadw',
                                                             'abrw', 'asne', 'aane', 'attrpure', 'attrcomb', 'graphsage'],
@@ -71,29 +71,29 @@ def parse_args():
     parser.add_argument('--ABRW-topk', default=30, type=int,
                         help='select the most attr similar top k nodes of a node; ranging [0, # of nodes]') 
     parser.add_argument('--ABRW-alpha', default=0.8, type=float,
-                        help='balance struc and attr info; ranging [0, 1]') 
-    parser.add_argument('--TADW-lamb', default=0.2, type=float,
-                        help='balance struc and attr info; ranging [0, inf]')       
+                        help='balance struc and attr info; ranging [0, 1]')       
     parser.add_argument('--AANE-lamb', default=0.05, type=float,
                         help='balance struc and attr info; ranging [0, inf]')
     parser.add_argument('--AANE-rho', default=5, type=float,
                         help='penalty parameter; ranging [0, inf]')
-    parser.add_argument('--AANE-mode', default='comb', type=str, 
-                        help='choices of mode: comb, pure')  
+    parser.add_argument('--AANE-maxiter', default=10, type=int,
+                        help='max iter')
+    parser.add_argument('--TADW-lamb', default=0.2, type=float,
+                        help='balance struc and attr info; ranging [0, inf]') 
+    parser.add_argument('--TADW-maxiter', default=10, type=int,
+                        help='max iter') 
     parser.add_argument('--ASNE-lamb', default=1.0, type=float,
                         help='balance struc and attr info; ranging [0, inf]')
     parser.add_argument('--AttrComb-mode', default='concat', type=str,
                         help='choices of mode: concat, elementwise-mean, elementwise-max')
-    parser.add_argument('--Node2Vec-p', default=0.5, type=float,
+    parser.add_argument('--Node2Vec-p', default=0.5, type=float,  #if p=q=1.0 node2vec = deepwalk
                         help='trade-off BFS and DFS; rid search [0.25; 0.50; 1; 2; 4]')             
     parser.add_argument('--Node2Vec-q', default=0.5, type=float,
                         help='trade-off BFS and DFS; rid search [0.25; 0.50; 1; 2; 4]')
     parser.add_argument('--GraRep-kstep', default=4, type=int,
-                        help='use k-step transition probability matrix')
+                        help='use k-step transition probability matrix, error if dim%Kstep!=0')
     parser.add_argument('--LINE-order', default=3, type=int, 
-                        help='choices of the order(s), 1st order, 2nd order, 1st+2nd order')
-    parser.add_argument('--LINE-no-auto-save', action='store_true',
-                        help='no save the best embeddings when training LINE')
+                        help='choices of the order(s): 1->1st, 2->2nd, 3->1st+2nd')
     parser.add_argument('--LINE-negative-ratio', default=5, type=int,
                         help='the negative ratio')
     #for walk based methods; some Word2Vec SkipGram parameters are not specified here
@@ -167,11 +167,27 @@ def main(args):
     if args.method == 'abrw': 
         model = abrw.ABRW(graph=g, dim=args.dim, alpha=args.ABRW_alpha, topk=args.ABRW_topk, number_walks=args.number_walks,
                             walk_length=args.walk_length, window=args.window_size, workers=args.workers)
+    elif args.method == 'aane':
+        model = aane.AANE(graph=g, dim=args.dim, lambd=args.AANE_lamb, rho=args.AANE_rho, maxiter=args.AANE_maxiter, 
+                            mode='comb') #mode: 'comb' struc and attri or 'pure' struc
+    elif args.method == 'tadw':
+        model = tadw.TADW(graph=g, dim=args.dim, lamb=args.TADW_lamb, maxiter=args.TADW_maxiter)
     elif args.method == 'attrpure':
-        model = attrpure.ATTRPURE(graph=g, dim=args.dim)
+        model = attrpure.ATTRPURE(graph=g, dim=args.dim, mode='pca')  #mode: pca or svd
     elif args.method == 'attrcomb':
-        model = attrcomb.ATTRCOMB(graph=g, dim=args.dim, comb_with='deepwalk',
-                                     num_paths=args.number_walks, comb_method=args.AttrComb_mode)  #concat, elementwise-mean, elementwise-max
+        model = attrcomb.ATTRCOMB(graph=g, dim=args.dim, comb_with='deepwalk', number_walks=args.number_walks, walk_length=args.walk_length,
+                                    window=args.window_size, workers=args.workers, comb_method=args.AttrComb_mode)  #comb_method: concat, elementwise-mean, elementwise-max
+    elif args.method == 'deepwalk':
+        model = node2vec.Node2vec(graph=g, path_length=args.walk_length, num_paths=args.number_walks, dim=args.dim,
+                                 workers=args.workers, window=args.window_size, dw=True)
+    elif args.method == 'node2vec':
+        model = node2vec.Node2vec(graph=g, path_length=args.walk_length, num_paths=args.number_walks, dim=args.dim,
+                                 workers=args.workers, window=args.window_size, p=args.Node2Vec_p, q=args.Node2Vec_q)
+    elif args.method == 'grarep':
+        model = GraRep(graph=g, Kstep=args.GraRep_kstep, dim=args.dim)
+    elif args.method == 'line': #if auto_save, use label to justifiy the best embeddings by looking at micro / macro-F1 score
+        model = line.LINE(graph=g, epoch = args.epochs, rep_size=args.dim, order=args.LINE_order, batch_size=args.batch_size, negative_ratio=args.LINE_negative_ratio,
+                        label_file=args.label_file, clf_ratio=args.label_reserved, auto_save=True, best='micro')
     elif args.method == 'asne':
         if args.task == 'nc':
             model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
@@ -179,30 +195,8 @@ def main(args):
         else:
             model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, epoch=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
                              X_test=test_node_pairs, Y_test=test_edge_labels, task=args.task, nc_ratio=args.label_reserved, lp_ratio=args.link_reserved, label_file=args.label_file)
-    elif args.method == 'aane':
-        model = aane.AANE(graph=g, dim=args.dim, lambd=args.AANE_lamb, mode=args.AANE_mode)
-    elif args.method == 'tadw':
-        model = tadw.TADW(graph=g, dim=args.dim, lamb=args.TADW_lamb)
-    elif args.method == 'deepwalk':
-        model = node2vec.Node2vec(graph=g, path_length=args.walk_length,
-                                 num_paths=args.number_walks, dim=args.dim,
-                                 workers=args.workers, window=args.window_size, dw=True)
-    elif args.method == 'node2vec':
-        model = node2vec.Node2vec(graph=g, path_length=args.walk_length, num_paths=args.number_walks, dim=args.dim,
-                                 workers=args.workers, p=args.Node2Vec_p, q=args.Node2Vec_q, window=args.window_size)
-    elif args.method == 'grarep':
-        model = GraRep(graph=g, Kstep=args.GraRep_kstep, dim=args.dim)
-    elif args.method == 'line':
-        if args.label_file and not args.LINE_no_auto_save:
-            model = line.LINE(g, epoch = args.epochs, rep_size=args.dim, order=args.LINE_order, 
-                label_file=args.label_file, clf_ratio=args.label_reserved)
-        else:
-            model = line.LINE(g, epoch = args.epochs, rep_size=args.dim, order=args.LINE_order)
-    elif args.method == 'graphsage':
-        model = graphsageAPI.graphsage_unsupervised_train(graph=g, graphsage_model = 'graphsage_mean')  
-        #we follow the default parameters, see __inti__.py in graphsage file
-        #choices: graphsage_mean, gcn ......
-        #model.save_embeddings(args.emb_file)  #to do...
+    elif args.method == 'graphsage': #we follow the default parameters, see __inti__.py in graphsage file
+        model = graphsageAPI.graphsage_unsupervised_train(graph=g, graphsage_model = 'graphsage_mean')
     elif args.method == 'gcn':
         model = graphsageAPI.graphsage_unsupervised_train(graph=g, graphsage_model = 'gcn') #graphsage-gcn
     else:
