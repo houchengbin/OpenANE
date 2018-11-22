@@ -17,7 +17,7 @@ from scipy import sparse
 # ---------------------------------ulits for calculation--------------------------------
 
 
-def row_as_probdist(mat):  #to do... also return dense matrix via a flag setting
+def row_as_probdist(mat, dense_output=False, preserve_zeros=False):
     """Make each row of matrix sums up to 1.0, i.e., a probability distribution.
     Support both dense and sparse matrix.
 
@@ -25,11 +25,11 @@ def row_as_probdist(mat):  #to do... also return dense matrix via a flag setting
     ----------
     mat : scipy sparse matrix or dense matrix or numpy array
         The matrix to be normalized
-
-    Note
-    ----
-    For row with all entries 0, we normalize it to a vector with all entries 1/n
-
+    dense_output : bool
+        whether forced dense output
+    perserve_zeros : bool
+        If False, for row with all entries 0, we normalize it to a vector with all entries 1/n.
+        Leave 0 otherwise
     Returns
     -------
     dense or sparse matrix:
@@ -42,8 +42,11 @@ def row_as_probdist(mat):  #to do... also return dense matrix via a flag setting
     row_sum[zero_rows] = 1
     diag = sparse.dia_matrix((1 / row_sum, 0), (mat.shape[0], mat.shape[0]))
     mat = diag.dot(mat)
-    mat += sparse.csr_matrix(zero_rows.astype(int)).T.dot(sparse.csr_matrix(np.repeat(1 / mat.shape[1], mat.shape[1])))
+    if not preserve_zeros:
+        mat += sparse.csr_matrix(zero_rows.astype(int)).T.dot(sparse.csr_matrix(np.repeat(1 / mat.shape[1], mat.shape[1])))
 
+    if dense_output and sparse.issparse(mat):
+        return mat.todense()
     return mat
 
 

@@ -4,6 +4,7 @@ ANE method: Text Associated DeepWalk (TADW)
 modified by Chengbin Hou 2018
 
 originally from https://github.com/thunlp/OpenNE/blob/master/src/openne/tadw.py
+the main diff: adapt to our graph.py APIs
 to do... sparse computation and remove unnecessary self vars; 
 otherwise, not scalable to large network;
 """
@@ -40,7 +41,7 @@ class TADW(object):
         return adj/np.sum(adj, axis=1)   #original may get numerical error sometimes...
         '''
         A = self.g.get_adj_mat()  #by defalut, return a sparse matrix
-        return np.array(row_as_probdist(A).todense())  #only support np.array, otherwise dim error...
+        return np.array(row_as_probdist(A, dense_output=True, preserve_zeros=True))  #only support np.array, otherwise dim error...
         
 
     def getT(self):
