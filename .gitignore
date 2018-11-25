@@ -18,6 +18,7 @@ db.ini
 deploy_key_rsa
 log
 bash
+emb
 
 
 #zeyu--------------------------------

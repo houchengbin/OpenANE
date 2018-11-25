@@ -1,5 +1,8 @@
-from __future__ import division
-from __future__ import print_function
+''' minor amended by Chengbin with comments 
+    so as to fit OpenANE framework \n
+    the key difference: auto save the best emb by looking at val loss \n
+    originally from https://github.com/williamleif/GraphSAGE \n
+'''
 
 import os
 import time
@@ -21,7 +24,6 @@ def evaluate(sess, model, minibatch_iter, size=None):
                         feed_dict=feed_dict_val)
     return outs_val[0], outs_val[1], outs_val[2], (time.time() - t_test)
 
-'''
 def incremental_evaluate(sess, model, minibatch_iter, size):
     t_test = time.time()
     finished = False
@@ -36,41 +38,31 @@ def incremental_evaluate(sess, model, minibatch_iter, size):
         val_losses.append(outs_val[0])
         val_mrrs.append(outs_val[2])
     return np.mean(val_losses), np.mean(val_mrrs), (time.time() - t_test)
-'''
 
-def save_val_embeddings(sess, model, minibatch_iter, size, mod=""):
+def save_val_embeddings(sess, model, minibatch_iter, size):
     val_embeddings = []
     finished = False
     seen = set([])  #this as set to store already seen emb-node id!
     nodes = []
     iter_num = 0
-    name = "val"
+    #name = "val"
     while not finished:
         feed_dict_val, finished, edges = minibatch_iter.incremental_embed_feed_dict(size, iter_num)
         iter_num += 1
-        outs_val = sess.run([model.loss, model.mrr, model.outputs1], 
-                            feed_dict=feed_dict_val)
+        outs_val = sess.run([model.loss, model.mrr, model.outputs1], feed_dict=feed_dict_val)
         #ONLY SAVE FOR embeds1 because of planetoid
         for i, edge in enumerate(edges):
             if not edge[0] in seen:
                 val_embeddings.append(outs_val[-1][i,:])
                 nodes.append(edge[0])  #nodes: a list; has order
                 seen.add(edge[0])  #seen: a set; NO order!!!
-    #if not os.path.exists(out_dir):
-    #    os.makedirs(out_dir)
 
     val_embeddings = np.vstack(val_embeddings)
-    print(val_embeddings.shape)
+    #print(val_embeddings.shape)
     vectors = {}
     for i, embedding in enumerate(val_embeddings):
         vectors[nodes[i]] = embedding  #warning: seen: a set; nodes: a list
-    return vectors
-
-    '''  #if we want to save embs, modify the following code
-    np.save(out_dir + name + mod + ".npy",  val_embeddings)
-    with open(out_dir + name + mod + ".txt", "w") as fp:
-        fp.write("\n".join(map(str,nodes)))
-    '''
+    return vectors #return them and use graphsageAPI to save them
 
 def construct_placeholders():
     # Define placeholders
@@ -85,11 +77,10 @@ def construct_placeholders():
     }
     return placeholders
 
-
-def train(train_data, test_data=None, model='graphsage_mean'):
+def train(train_data, test_data, model):
     print('---------- the graphsage model we used: ', model)
-    print('---------- parameters we sued: epochs, dim_1+dim_2, samples_1, samples_2, dropout, weight_decay, learning_rate, batch_size, normalize', 
-            epochs, dim_1+dim_2, samples_1, samples_2, dropout, weight_decay, learning_rate, batch_size, normalize)
+    print('---------- parameters we sued: epochs, dim_1+dim_2, samples_1, samples_2, dropout, weight_decay, learning_rate, batch_size', 
+            epochs, dim_1+dim_2, samples_1, samples_2, dropout, weight_decay, learning_rate, batch_size)
     G = train_data[0]
     features = train_data[1]  #note: features are in order of graph.look_up_list, since id_map = {k: v for v, k in enumerate(graph.look_back_list)}
     id_map = train_data[2]
@@ -98,7 +89,6 @@ def train(train_data, test_data=None, model='graphsage_mean'):
         # pad with dummy zero vector
         features = np.vstack([features, np.zeros((features.shape[1],))])
     
-    random_context = False
     context_pairs = train_data[3] if random_context else None
     placeholders = construct_placeholders()
     minibatch = EdgeMinibatchIterator(G, 
@@ -110,7 +100,7 @@ def train(train_data, test_data=None, model='graphsage_mean'):
     adj_info_ph = tf.placeholder(tf.int32, shape=minibatch.adj.shape)
     adj_info = tf.Variable(adj_info_ph, trainable=False, name="adj_info")
 
-    if model == 'graphsage_mean':
+    if model == 'mean':
         # Create model
         sampler = UniformNeighborSampler(adj_info)
         layer_infos = [SAGEInfo("node", sampler, samples_1, dim_1),
@@ -141,7 +131,7 @@ def train(train_data, test_data=None, model='graphsage_mean'):
                                      concat=False,
                                      logging=True)
 
-    elif model == 'graphsage_seq':  #LSTM as stated in paper? very slow anyway...
+    elif model == 'seq':  #LSTM as stated in paper? very slow anyway...
         sampler = UniformNeighborSampler(adj_info)
         layer_infos = [SAGEInfo("node", sampler, samples_1, dim_1),
                             SAGEInfo("node", sampler, samples_2, dim_2)]
@@ -156,7 +146,7 @@ def train(train_data, test_data=None, model='graphsage_mean'):
                                      model_size=model_size,
                                      logging=True)
 
-    elif model == 'graphsage_maxpool':
+    elif model == 'maxpool':
         sampler = UniformNeighborSampler(adj_info)
         layer_infos = [SAGEInfo("node", sampler, samples_1, dim_1),
                             SAGEInfo("node", sampler, samples_2, dim_2)]
@@ -170,7 +160,7 @@ def train(train_data, test_data=None, model='graphsage_mean'):
                                      model_size=model_size,
                                      identity_dim = identity_dim,
                                      logging=True)
-    elif model == 'graphsage_meanpool':
+    elif model == 'meanpool':
         sampler = UniformNeighborSampler(adj_info)
         layer_infos = [SAGEInfo("node", sampler, samples_1, dim_1),
                             SAGEInfo("node", sampler, samples_2, dim_2)]
@@ -202,7 +192,7 @@ def train(train_data, test_data=None, model='graphsage_mean'):
     # Initialize session
     sess = tf.Session(config=config)
     merged = tf.summary.merge_all()
-    #summary_writer = tf.summary.FileWriter(log_dir(), sess.graph)
+    #summary_writer = tf.summary.FileWriter(log_dir(), sess.graph) #we ignore log file
      
     # Init variables
     sess.run(tf.global_variables_initializer(), feed_dict={adj_info_ph: minibatch.adj})
@@ -211,13 +201,15 @@ def train(train_data, test_data=None, model='graphsage_mean'):
     
     train_shadow_mrr = None
     shadow_mrr = None
-
     total_steps = 0
-    avg_time = 0.0
     epoch_val_costs = []
-
     train_adj_info = tf.assign(adj_info, minibatch.adj)
     val_adj_info = tf.assign(adj_info, minibatch.test_adj)
+
+    vectors = None #to store best embs and return at the end
+    best_result = None
+
+    t1 = time.time()
     for epoch in range(epochs): 
         minibatch.shuffle() 
 
@@ -229,7 +221,7 @@ def train(train_data, test_data=None, model='graphsage_mean'):
         val_cost = 0
         val_mrr = 0
         shadow_mrr = 0
-        avg_time = 0
+
         while not minibatch.end():
             # Construct feed dictionary
             feed_dict = minibatch.next_minibatch_feed_dict()
@@ -259,35 +251,39 @@ def train(train_data, test_data=None, model='graphsage_mean'):
 
             #if total_steps % print_every == 0:
                 #summary_writer.add_summary(outs[0], total_steps)
-    
-            # Print results
-            avg_time = (avg_time * total_steps + time.time() - t) / (total_steps + 1)
 
             iter += 1
             total_steps += 1
-
             if total_steps > max_total_steps:
                 break
         
-        epoch += 1
+        epoch += 1 
+        t2 = time.time()
+        #only print the last iter result at the end of each epoch
         print("Epoch:", '%04d' % epoch, 
         "train_loss=", "{:.5f}".format(train_cost),
-        "train_mrr=", "{:.5f}".format(train_mrr), 
-        "train_mrr_ema=", "{:.5f}".format(train_shadow_mrr), # exponential moving average
+        #"train_mrr=", "{:.5f}".format(train_mrr), 
+        #"train_mrr_ema=", "{:.5f}".format(train_shadow_mrr),
         "val_loss=", "{:.5f}".format(val_cost),
-        "val_mrr=", "{:.5f}".format(val_mrr), 
-        "val_mrr_ema=", "{:.5f}".format(shadow_mrr), # exponential moving average
-        "time=", "{:.5f}".format(avg_time))
+        #"val_mrr=", "{:.5f}".format(val_mrr), 
+        #"val_mrr_ema=", "{:.5f}".format(shadow_mrr),
+        "time cost", "{:.2f}".format(t2-t1))
 
-        if total_steps > max_total_steps:
-                break
-    
-    print("Optimization Finished!")
-
-    sess.run(val_adj_info.op)
-    #save_val_embeddings(sess, model, minibatch, validate_batch_size, log_dir())
-    return save_val_embeddings(sess, model, minibatch, validate_batch_size)  #return embs
-
-
-def graphsage_save_embeddings(self, filename): #to do...
-    pass
+        #no early stopping was used in original code---------------- auto-save-best-emb ------------------------------
+        #instead, we will chose the best result by looking at smallest val loss
+        if epoch == 1:
+            best_result = val_cost
+            sess.run(val_adj_info.op)     #what is this for before get emb ? if ignore it, get worse result...
+            vectors = save_val_embeddings(sess, model, minibatch, validate_batch_size)
+        else:
+            if best_result > val_cost:  #if val loss decreasing
+                best_result = val_cost
+                sess.run(val_adj_info.op) #what is this for before get emb ? if ignore it, get worse result...
+                vectors = save_val_embeddings(sess, model, minibatch, validate_batch_size)
+            else:
+                print('val loss increasing @ ', epoch, ' w.r.t. last best epoch, and do not cover previous emb...')
+        
+        #sess.run(val_adj_info.op)     #what is this for before get emb ? ignore it?????
+        #vectors = save_val_embeddings(sess, model, minibatch, validate_batch_size)
+    print("Finished!")
+    return vectors
