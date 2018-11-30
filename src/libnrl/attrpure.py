@@ -4,12 +4,8 @@ NE method: use only attribute information (AttrPure)
 by Chengbin Hou 2018
 """
 
-import time
-
-import networkx as nx
-import numpy as np
-
 from .utils import dim_reduction
+
 
 class ATTRPURE(object):
 
@@ -17,7 +13,7 @@ class ATTRPURE(object):
         self.g = graph
         self.dim = dim
         self.mode = mode
-        
+
         print("Learning representation...")
         self.vectors = {}
         embeddings = self.train()
@@ -35,12 +31,10 @@ class ATTRPURE(object):
             print('unknown dim reduction technique...')
         return X_compressed
 
-
     def save_embeddings(self, filename):
         fout = open(filename, 'w')
         node_num = len(self.vectors.keys())
         fout.write("{} {}\n".format(node_num, self.dim))
         for node, vec in self.vectors.items():
-            fout.write("{} {}\n".format(node,
-                                        ' '.join([str(x) for x in vec])))
-        fout.close()     
+            fout.write("{} {}\n".format(node, ' '.join([str(x) for x in vec])))
+        fout.close()

@@ -1,14 +1,15 @@
+import math
 from collections import namedtuple
 
 import tensorflow as tf
-import math
 
 import libnrl.graphsage.layers as layers
 import libnrl.graphsage.metrics as metrics
-
+from libnrl.graphsage.__init__ import *  # import default parameters
+from libnrl.graphsage.aggregators import (GCNAggregator, MaxPoolingAggregator,
+                                          MeanAggregator,
+                                          MeanPoolingAggregator, SeqAggregator)
 from libnrl.graphsage.prediction import BipartiteEdgePredLayer
-from libnrl.graphsage.aggregators import MeanAggregator, MaxPoolingAggregator, MeanPoolingAggregator, SeqAggregator, GCNAggregator
-from libnrl.graphsage.__init__ import *  #import default parameters
 
 '''
 flags = tf.app.flags
@@ -19,6 +20,7 @@ FLAGS = FLAGS
 # Boilerplate parts of this code file were originally forked from
 # https://github.com/tkipf/gcn
 # which itself was very inspired by the keras package
+
 
 class Model(object):
     def __init__(self, **kwargs):
@@ -99,6 +101,7 @@ class Model(object):
 
 class MLP(Model):
     """ A standard multi-layer perceptron """
+
     def __init__(self, placeholders, dims, categorical=True, **kwargs):
         super(MLP, self).__init__(**kwargs)
 
@@ -123,7 +126,7 @@ class MLP(Model):
         # Cross entropy error
         if self.categorical:
             self.loss += metrics.masked_softmax_cross_entropy(self.outputs, self.placeholders['labels'],
-                    self.placeholders['labels_mask'])
+                                                              self.placeholders['labels_mask'])
         # L2
         else:
             diff = self.labels - self.outputs
@@ -132,24 +135,25 @@ class MLP(Model):
     def _accuracy(self):
         if self.categorical:
             self.accuracy = metrics.masked_accuracy(self.outputs, self.placeholders['labels'],
-                    self.placeholders['labels_mask'])
+                                                    self.placeholders['labels_mask'])
 
     def _build(self):
         self.layers.append(layers.Dense(input_dim=self.input_dim,
-                                 output_dim=self.dims[1],
-                                 act=tf.nn.relu,
-                                 dropout=self.placeholders['dropout'],
-                                 sparse_inputs=False,
-                                 logging=self.logging))
+                                        output_dim=self.dims[1],
+                                        act=tf.nn.relu,
+                                        dropout=self.placeholders['dropout'],
+                                        sparse_inputs=False,
+                                        logging=self.logging))
 
         self.layers.append(layers.Dense(input_dim=self.dims[1],
-                                 output_dim=self.output_dim,
-                                 act=lambda x: x,
-                                 dropout=self.placeholders['dropout'],
-                                 logging=self.logging))
+                                        output_dim=self.output_dim,
+                                        act=lambda x: x,
+                                        dropout=self.placeholders['dropout'],
+                                        logging=self.logging))
 
     def predict(self):
         return tf.nn.softmax(self.outputs)
+
 
 class GeneralizedModel(Model):
     """
@@ -161,7 +165,6 @@ class GeneralizedModel(Model):
 
     def __init__(self, **kwargs):
         super(GeneralizedModel, self).__init__(**kwargs)
-        
 
     def build(self):
         """ Wrapper for _build() """
@@ -178,14 +181,16 @@ class GeneralizedModel(Model):
 
         self.opt_op = self.optimizer.minimize(self.loss)
 
-# SAGEInfo is a namedtuple that specifies the parameters 
+
+# SAGEInfo is a namedtuple that specifies the parameters
 # of the recursive GraphSAGE layers
 SAGEInfo = namedtuple("SAGEInfo",
-    ['layer_name', # name of the layer (to get feature embedding etc.)
-     'neigh_sampler', # callable neigh_sampler constructor
-     'num_samples',
-     'output_dim' # the output (i.e., hidden) dimension
-    ])
+                      ['layer_name',  # name of the layer (to get feature embedding etc.)
+                       'neigh_sampler',  # callable neigh_sampler constructor
+                       'num_samples',
+                       'output_dim'  # the output (i.e., hidden) dimension
+                       ])
+
 
 class SampleAndAggregate(GeneralizedModel):
     """
@@ -193,9 +198,9 @@ class SampleAndAggregate(GeneralizedModel):
     """
 
     def __init__(self, placeholders, features, adj, degrees,
-            layer_infos, concat=True, aggregator_type="mean", 
-            model_size="small", identity_dim=0,
-            **kwargs):
+                 layer_infos, concat=True, aggregator_type="mean",
+                 model_size="small", identity_dim=0,
+                 **kwargs):
         '''
         Args:
             - placeholders: Stanford TensorFlow placeholder object.
@@ -230,16 +235,16 @@ class SampleAndAggregate(GeneralizedModel):
         self.model_size = model_size
         self.adj_info = adj
         if identity_dim > 0:
-           self.embeds = tf.get_variable("node_embeddings", [adj.get_shape().as_list()[0], identity_dim])
+            self.embeds = tf.get_variable("node_embeddings", [adj.get_shape().as_list()[0], identity_dim])
         else:
-           self.embeds = None
-        if features is None: 
+            self.embeds = None
+        if features is None:
             if identity_dim == 0:
                 raise Exception("Must have a positive value for identity feature dimension if no input features given.")
             self.features = self.embeds
         else:
             self.features = tf.Variable(tf.constant(features, dtype=tf.float32), trainable=False)
-            if not self.embeds is None:
+            if self.embeds is not None:
                 self.features = tf.concat([self.embeds, self.features], axis=1)
         self.degrees = degrees
         self.concat = concat
@@ -261,7 +266,7 @@ class SampleAndAggregate(GeneralizedModel):
             inputs: batch inputs
             batch_size: the number of inputs (different for batch inputs and negative samples).
         """
-        
+
         if batch_size is None:
             batch_size = self.batch_size
         samples = [inputs]
@@ -273,13 +278,12 @@ class SampleAndAggregate(GeneralizedModel):
             support_size *= layer_infos[t].num_samples
             sampler = layer_infos[t].neigh_sampler
             node = sampler((samples[k], layer_infos[t].num_samples))
-            samples.append(tf.reshape(node, [support_size * batch_size,]))
+            samples.append(tf.reshape(node, [support_size * batch_size, ]))
             support_sizes.append(support_size)
         return samples, support_sizes
 
-
     def aggregate(self, samples, input_features, dims, num_samples, support_sizes, batch_size=None,
-            aggregators=None, name=None, concat=False, model_size="small"):
+                  aggregators=None, name=None, concat=False, model_size="small"):
         """ At each layer, aggregate hidden representations of neighbors to compute the hidden representations 
             at next layer.
         Args:
@@ -308,13 +312,13 @@ class SampleAndAggregate(GeneralizedModel):
                 dim_mult = 2 if concat and (layer != 0) else 1
                 # aggregator at current layer
                 if layer == len(num_samples) - 1:
-                    aggregator = self.aggregator_cls(dim_mult*dims[layer], dims[layer+1], act=lambda x : x,
-                            dropout=self.placeholders['dropout'], 
-                            name=name, concat=concat, model_size=model_size)
+                    aggregator = self.aggregator_cls(dim_mult*dims[layer], dims[layer+1], act=lambda x: x,
+                                                     dropout=self.placeholders['dropout'],
+                                                     name=name, concat=concat, model_size=model_size)
                 else:
                     aggregator = self.aggregator_cls(dim_mult*dims[layer], dims[layer+1],
-                            dropout=self.placeholders['dropout'], 
-                            name=name, concat=concat, model_size=model_size)
+                                                     dropout=self.placeholders['dropout'],
+                                                     name=name, concat=concat, model_size=model_size)
                 aggregators.append(aggregator)
             else:
                 aggregator = aggregators[layer]
@@ -323,8 +327,8 @@ class SampleAndAggregate(GeneralizedModel):
             # as layer increases, the number of support nodes needed decreases
             for hop in range(len(num_samples) - layer):
                 dim_mult = 2 if concat and (layer != 0) else 1
-                neigh_dims = [batch_size * support_sizes[hop], 
-                              num_samples[len(num_samples) - hop - 1], 
+                neigh_dims = [batch_size * support_sizes[hop],
+                              num_samples[len(num_samples) - hop - 1],
                               dim_mult*dims[layer]]
                 h = aggregator((hidden[hop],
                                 tf.reshape(hidden[hop + 1], neigh_dims)))
@@ -334,8 +338,8 @@ class SampleAndAggregate(GeneralizedModel):
 
     def _build(self):
         labels = tf.reshape(
-                tf.cast(self.placeholders['batch2'], dtype=tf.int64),
-                [self.batch_size, 1])
+            tf.cast(self.placeholders['batch2'], dtype=tf.int64),
+            [self.batch_size, 1])
         self.neg_samples, _, _ = (tf.nn.fixed_unigram_candidate_sampler(
             true_classes=labels,
             num_true=1,
@@ -345,28 +349,27 @@ class SampleAndAggregate(GeneralizedModel):
             distortion=0.75,
             unigrams=self.degrees.tolist()))
 
-           
         # perform "convolution"
         samples1, support_sizes1 = self.sample(self.inputs1, self.layer_infos)
         samples2, support_sizes2 = self.sample(self.inputs2, self.layer_infos)
         num_samples = [layer_info.num_samples for layer_info in self.layer_infos]
         self.outputs1, self.aggregators = self.aggregate(samples1, [self.features], self.dims, num_samples,
-                support_sizes1, concat=self.concat, model_size=self.model_size)
+                                                         support_sizes1, concat=self.concat, model_size=self.model_size)
         self.outputs2, _ = self.aggregate(samples2, [self.features], self.dims, num_samples,
-                support_sizes2, aggregators=self.aggregators, concat=self.concat,
-                model_size=self.model_size)
+                                          support_sizes2, aggregators=self.aggregators, concat=self.concat,
+                                          model_size=self.model_size)
 
         neg_samples, neg_support_sizes = self.sample(self.neg_samples, self.layer_infos,
-            neg_sample_size)
+                                                     neg_sample_size)
         self.neg_outputs, _ = self.aggregate(neg_samples, [self.features], self.dims, num_samples,
-                neg_support_sizes, batch_size=neg_sample_size, aggregators=self.aggregators,
-                concat=self.concat, model_size=self.model_size)
+                                             neg_support_sizes, batch_size=neg_sample_size, aggregators=self.aggregators,
+                                             concat=self.concat, model_size=self.model_size)
 
         dim_mult = 2 if self.concat else 1
         self.link_pred_layer = BipartiteEdgePredLayer(dim_mult*self.dims[-1],
-                dim_mult*self.dims[-1], self.placeholders, act=tf.nn.sigmoid, 
-                bilinear_weights=False,
-                name='edge_predict')
+                                                      dim_mult*self.dims[-1], self.placeholders, act=tf.nn.sigmoid,
+                                                      bilinear_weights=False,
+                                                      name='edge_predict')
 
         self.outputs1 = tf.nn.l2_normalize(self.outputs1, 1)
         self.outputs2 = tf.nn.l2_normalize(self.outputs2, 1)
@@ -380,8 +383,8 @@ class SampleAndAggregate(GeneralizedModel):
         self._accuracy()
         self.loss = self.loss / tf.cast(self.batch_size, tf.float32)
         grads_and_vars = self.optimizer.compute_gradients(self.loss)
-        clipped_grads_and_vars = [(tf.clip_by_value(grad, -5.0, 5.0) if grad is not None else None, var) 
-                for grad, var in grads_and_vars]
+        clipped_grads_and_vars = [(tf.clip_by_value(grad, -5.0, 5.0) if grad is not None else None, var)
+                                  for grad, var in grads_and_vars]
         self.grad, _ = clipped_grads_and_vars[0]
         self.opt_op = self.optimizer.apply_gradients(clipped_grads_and_vars)
 
@@ -390,7 +393,7 @@ class SampleAndAggregate(GeneralizedModel):
             for var in aggregator.vars.values():
                 self.loss += weight_decay * tf.nn.l2_loss(var)
 
-        self.loss += self.link_pred_layer.loss(self.outputs1, self.outputs2, self.neg_outputs) 
+        self.loss += self.link_pred_layer.loss(self.outputs1, self.outputs2, self.neg_outputs)
         tf.summary.scalar('loss', self.loss)
 
     def _accuracy(self):
@@ -432,15 +435,15 @@ class Node2VecModel(GeneralizedModel):
 
         # following the tensorflow word2vec tutorial
         self.target_embeds = tf.Variable(
-                tf.random_uniform([dict_size, nodevec_dim], -1, 1),
-                name="target_embeds")
+            tf.random_uniform([dict_size, nodevec_dim], -1, 1),
+            name="target_embeds")
         self.context_embeds = tf.Variable(
-                tf.truncated_normal([dict_size, nodevec_dim],
-                stddev=1.0 / math.sqrt(nodevec_dim)),
-                name="context_embeds")
+            tf.truncated_normal([dict_size, nodevec_dim],
+                                stddev=1.0 / math.sqrt(nodevec_dim)),
+            name="context_embeds")
         self.context_bias = tf.Variable(
-                tf.zeros([dict_size]),
-                name="context_bias")
+            tf.zeros([dict_size]),
+            name="context_bias")
 
         self.optimizer = tf.train.GradientDescentOptimizer(learning_rate=lr)
 
@@ -448,8 +451,8 @@ class Node2VecModel(GeneralizedModel):
 
     def _build(self):
         labels = tf.reshape(
-                tf.cast(self.placeholders['batch2'], dtype=tf.int64),
-                [self.batch_size, 1])
+            tf.cast(self.placeholders['batch2'], dtype=tf.int64),
+            [self.batch_size, 1])
         self.neg_samples, _, _ = (tf.nn.fixed_unigram_candidate_sampler(
             true_classes=labels,
             num_true=1,
@@ -466,7 +469,7 @@ class Node2VecModel(GeneralizedModel):
         self.neg_outputs_bias = tf.nn.embedding_lookup(self.context_bias, self.neg_samples)
 
         self.link_pred_layer = BipartiteEdgePredLayer(self.hidden_dim, self.hidden_dim,
-                self.placeholders, bilinear_weights=False)
+                                                      self.placeholders, bilinear_weights=False)
 
     def build(self):
         self._build()
@@ -482,17 +485,17 @@ class Node2VecModel(GeneralizedModel):
         aff = tf.reduce_sum(tf.multiply(self.outputs1, self.outputs2), 1) + self.outputs2_bias
         neg_aff = tf.matmul(self.outputs1, tf.transpose(self.neg_outputs)) + self.neg_outputs_bias
         true_xent = tf.nn.sigmoid_cross_entropy_with_logits(
-                labels=tf.ones_like(aff), logits=aff)
+            labels=tf.ones_like(aff), logits=aff)
         negative_xent = tf.nn.sigmoid_cross_entropy_with_logits(
-                labels=tf.zeros_like(neg_aff), logits=neg_aff)
+            labels=tf.zeros_like(neg_aff), logits=neg_aff)
         loss = tf.reduce_sum(true_xent) + tf.reduce_sum(negative_xent)
         self.loss = loss / tf.cast(self.batch_size, tf.float32)
         tf.summary.scalar('loss', self.loss)
-        
+
     def _accuracy(self):
         # shape: [batch_size]
         aff = self.link_pred_layer.affinity(self.outputs1, self.outputs2)
-       # shape : [batch_size x num_neg_samples]
+        # shape : [batch_size x num_neg_samples]
         self.neg_aff = self.link_pred_layer.neg_cost(self.outputs1, self.neg_outputs)
         self.neg_aff = tf.reshape(self.neg_aff, [self.batch_size, neg_sample_size])
         _aff = tf.expand_dims(aff, axis=1)

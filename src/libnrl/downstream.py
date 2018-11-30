@@ -5,16 +5,12 @@ import math
 import random
 import warnings
 
-import networkx as nx
 import numpy as np
-from sklearn.metrics import (accuracy_score, auc, classification_report,
-                             f1_score, roc_auc_score, roc_curve)
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
 
-warnings.filterwarnings(
-    action='ignore', category=UserWarning, module='sklearn')
+warnings.filterwarnings(action='ignore', category=UserWarning, module='sklearn')
 
 '''
 #-----------------------------------------------------------------------------
@@ -98,7 +94,6 @@ class lpClassifier(object):
 
     # clf here is simply a similarity/distance metric
     def evaluate(self, X_test, Y_test, seed=0):
-        state = np.random.get_state()
         # np.random.seed(seed)
         test_size = len(X_test)
         # shuffle_indices = np.random.permutation(np.arange(test_size))

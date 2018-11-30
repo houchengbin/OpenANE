@@ -1,11 +1,11 @@
-from __future__ import division
-from __future__ import print_function
+from __future__ import division, print_function
 
 import time
+
 import tensorflow as tf
 
-from gcn.utils import *
 from gcn.models import GCN, MLP
+from gcn.utils import *
 
 # Set random seed
 seed = 123

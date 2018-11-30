@@ -8,12 +8,16 @@ the main diff: adapt to our graph.py APIs; and use 'micro-F1' to find the best e
 """
 
 from __future__ import print_function
-import random
+
 import math
+import random
+
 import numpy as np
-from sklearn.linear_model import LogisticRegression
 import tensorflow as tf
-from .downstream import ncClassifier  # to do... try use lpClassifier to choose best embeddings?
+from sklearn.linear_model import LogisticRegression
+
+from .downstream import \
+    ncClassifier  # to do... try use lpClassifier to choose best embeddings?
 from .utils import read_node_label_downstream
 
 
@@ -42,8 +46,8 @@ class _LINE(object):
         self.sign = tf.placeholder(tf.float32, [None])
 
         cur_seed = random.getrandbits(32)
-        self.embeddings = tf.get_variable(name="embeddings"+str(self.order), shape=[self.node_size, self.rep_size], initializer = tf.contrib.layers.xavier_initializer(uniform=False, seed=cur_seed))
-        self.context_embeddings = tf.get_variable(name="context_embeddings"+str(self.order), shape=[self.node_size, self.rep_size], initializer = tf.contrib.layers.xavier_initializer(uniform=False, seed=cur_seed))
+        self.embeddings = tf.get_variable(name="embeddings"+str(self.order), shape=[self.node_size, self.rep_size], initializer=tf.contrib.layers.xavier_initializer(uniform=False, seed=cur_seed))
+        self.context_embeddings = tf.get_variable(name="context_embeddings"+str(self.order), shape=[self.node_size, self.rep_size], initializer=tf.contrib.layers.xavier_initializer(uniform=False, seed=cur_seed))
         # self.h_e = tf.nn.l2_normalize(tf.nn.embedding_lookup(self.embeddings, self.h), 1)
         # self.t_e = tf.nn.l2_normalize(tf.nn.embedding_lookup(self.embeddings, self.t), 1)
         # self.t_e_context = tf.nn.l2_normalize(tf.nn.embedding_lookup(self.context_embeddings, self.t), 1)
@@ -59,7 +63,6 @@ class _LINE(object):
         optimizer = tf.train.AdamOptimizer(0.001)
         self.train_op = optimizer.minimize(self.loss)
 
-
     def train_one_epoch(self):
         sum_loss = 0.0
         batches = self.batch_iter()
@@ -67,9 +70,9 @@ class _LINE(object):
         for batch in batches:
             h, t, sign = batch
             feed_dict = {
-                self.h : h,
-                self.t : t,
-                self.sign : sign,
+                self.h: h,
+                self.t: t,
+                self.sign: sign,
             }
             _, cur_loss = self.sess.run([self.train_op, self.loss], feed_dict)
             sum_loss += cur_loss
@@ -81,12 +84,11 @@ class _LINE(object):
         look_up = self.g.look_up_dict
 
         table_size = 1e8
-        numNodes = self.node_size
 
         edges = [(look_up[x[0]], look_up[x[1]]) for x in self.g.G.edges()]
 
         data_size = self.g.G.number_of_edges()
-        edge_set = set([x[0]*numNodes+x[1] for x in edges])
+        # edge_set = set([x[0]*numNodes+x[1] for x in edges])
         shuffle_indices = np.random.permutation(np.arange(data_size))
 
         # positive or negative mod
@@ -129,7 +131,7 @@ class _LINE(object):
         numNodes = self.node_size
 
         print("Pre-procesing for non-uniform negative sampling!")
-        node_degree = np.zeros(numNodes) # out degree
+        node_degree = np.zeros(numNodes)  # out degree
 
         look_up = self.g.look_up_dict
         for edge in self.g.G.edges():
@@ -188,7 +190,6 @@ class _LINE(object):
             num_small_block -= 1
             self.edge_prob[small_block[num_small_block]] = 1
 
-
     def get_embeddings(self):
         vectors = {}
         embeddings = self.embeddings.eval(session=self.sess)
@@ -208,11 +209,11 @@ class LINE(object):
         self.best_result = 0
         self.vectors = {}
         self.g = graph
-        
-        if not self.g.get_isweighted(): #add equal weights 1.0 to all existing edges
-            self.g.add_edge_weight(equal_weight=1.0) #add 'weight' to networkx graph
 
-        if order == 3: #if order 3 i.e. concat embeddings by 1 and 2
+        if not self.g.get_isweighted():  # add equal weights 1.0 to all existing edges
+            self.g.add_edge_weight(equal_weight=1.0)  # add 'weight' to networkx graph
+
+        if order == 3:  # if order 3 i.e. concat embeddings by 1 and 2
             self.model1 = _LINE(graph, rep_size/2, batch_size, negative_ratio, order=1)
             self.model2 = _LINE(graph, rep_size/2, batch_size, negative_ratio, order=2)
             for i in range(epoch):
@@ -230,7 +231,7 @@ class LINE(object):
                         if auto_save:
                             self.best_vector = self.vectors
 
-        else: #if order 1 or 2
+        else:  # if order 1 or 2
             self.model = _LINE(graph, rep_size, batch_size, negative_ratio, order=self.order)
             for i in range(epoch):
                 self.model.train_one_epoch()

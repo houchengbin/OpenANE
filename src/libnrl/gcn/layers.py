@@ -1,5 +1,6 @@
-from .inits import *
 import tensorflow as tf
+
+from .inits import *
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -84,6 +85,7 @@ class Layer(object):
 
 class Dense(Layer):
     """Dense layer."""
+
     def __init__(self, input_dim, output_dim, placeholders, dropout=0., sparse_inputs=False,
                  act=tf.nn.relu, bias=False, featureless=False, **kwargs):
         super(Dense, self).__init__(**kwargs)
@@ -131,6 +133,7 @@ class Dense(Layer):
 
 class GraphConvolution(Layer):
     """Graph convolution layer."""
+
     def __init__(self, input_dim, output_dim, placeholders, dropout=0.,
                  sparse_inputs=False, act=tf.nn.relu, bias=False,
                  featureless=False, **kwargs):

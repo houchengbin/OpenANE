@@ -1,9 +1,11 @@
-import numpy as np
-from .utils import *
-from . import models
 import time
-import scipy.sparse as sp
+
+import numpy as np
 import tensorflow as tf
+
+from . import models
+from .utils import *
+
 
 class GCN(object):
 
@@ -71,8 +73,6 @@ class GCN(object):
         print("Test set results:", "cost=", "{:.5f}".format(test_cost),
               "accuracy=", "{:.5f}".format(test_acc), "time=", "{:.5f}".format(test_duration))
 
-
-
     # Define model evaluation function
     def evaluate(self, mask):
         t_test = time.time()
@@ -125,6 +125,7 @@ class GCN(object):
 
         look_up = self.graph.look_up_dict
         g = self.graph.G
+
         def sample_mask(begin, end):
             mask = np.zeros(g.number_of_nodes())
             for i in range(begin, end):
@@ -147,13 +148,12 @@ class GCN(object):
         g = self.graph.G
         look_back = self.graph.look_back_list
         self.features = np.vstack([g.nodes[look_back[i]]['feature']
-            for i in range(g.number_of_nodes())]) 
+                                   for i in range(g.number_of_nodes())])
         self.features = preprocess_features(self.features)
         self.build_label()
         self.build_train_val_test()
-        adj = nx.adjacency_matrix(g) # the type of graph
+        adj = nx.adjacency_matrix(g)  # the type of graph
         self.support = [preprocess_adj(adj)]
-
 
     def construct_feed_dict(self, labels_mask):
         """Construct feed dictionary."""
@@ -164,5 +164,3 @@ class GCN(object):
         feed_dict.update({self.placeholders['support'][i]: self.support[i] for i in range(len(self.support))})
         feed_dict.update({self.placeholders['num_features_nonzero']: self.features[1].shape})
         return feed_dict
-
-

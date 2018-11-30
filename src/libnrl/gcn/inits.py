@@ -1,5 +1,5 @@
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 
 
 def uniform(shape, scale=0.05, name=None):

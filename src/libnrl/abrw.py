@@ -6,7 +6,6 @@ by Chengbin Hou & Zeyu Dong 2018
 
 import time
 import warnings
-warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 
 import numpy as np
 from gensim.models import Word2Vec
@@ -14,6 +13,8 @@ from scipy import sparse
 
 from . import walker
 from .utils import pairwise_similarity, row_as_probdist
+
+warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 
 
 class ABRW(object):
@@ -58,8 +59,8 @@ class ABRW(object):
         result: ABRW-trainsition matrix; T
         *** questions: 1) what about if we have some single nodes i.e. some rows of T_A gives 0s
                        2) the similarity/distance metric to obtain T_X
-                       3) alias sampling as used in node2vec for speeding up, but this is the case 
-                            if each row of P gives many 0s 
+                       3) alias sampling as used in node2vec for speeding up, but this is the case
+                            if each row of P gives many 0s
                             --> how to make each row of P is a pdf and meanwhile is sparse
         '''
         print("obtaining biased transition matrix where each row sums up to 1.0...")
@@ -94,8 +95,8 @@ class ABRW(object):
         print(f'ABRW biased transition matrix processing time: {(t5-t4):.2f}s')
         return T
 
-    def save_embeddings(self, filename):  #to do... put it to utils;
-        fout = open(filename, 'w')        #call it while __init__ (abrw calss) with flag --save-emb=True (from main.py)
+    def save_embeddings(self, filename):  # to do... put it to utils;
+        fout = open(filename, 'w')  # call it while __init__ (abrw calss) with flag --save-emb=True (from main.py)
         node_num = len(self.vectors.keys())
         fout.write("{} {}\n".format(node_num, self.dim))
         for node, vec in self.vectors.items():
