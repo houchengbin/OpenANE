@@ -1,13 +1,13 @@
-# OpenANE: The first open source framework specialized in Attributed Network Embedding (ANE)
-We reproduce several ANE (Attributed Network Embedding) as well as PNE (Pure Network Embedding) methods in one framework, where they all share the same I/O and downstream tasks. We start this project based on the excellent project [OpenNE](https://github.com/thunlp/OpenNE) that integrates several PNE methods under the same framework. However, OpenANE not only integrates those PNE methods from OpenNE, but also provides the state-of-the-art ANE methods that consider both structural and attribute information during embedding.
+# OpenANE: The first Open source framework specialized in Attributed Network Embedding (ANE)
+We reproduce several ANE (Attributed Network Embedding) as well as PNE (Pure Network Embedding) methods in one unified framework, where they all share the same I/O and downstream tasks. We start this project based on the excellent project [OpenNE](https://github.com/thunlp/OpenNE) that integrates several PNE methods under one unified framework. 
+<br> OpenANE not only integrates those PNE methods that consider pure structural information, but also provides the state-of-the-art ANE methods that consider both structural and attribute information during embedding.
 
 Authors: Chengbin HOU chengbin.hou10@foxmail.com & Zeyu DONG 2018
 
 
 ## Motivation
-In many real-world scenarios, a network often comes with node attributes such as paper metadata in a citation network and user profiles in a social network. PNE methods that only consider structural information cannot make use of attribute information that may further improve the quality of node embeddings.
-<br> From engineering perspective, by offering more APIs to handle attribute information in graph.py and utils.py, OpenANE shall be very easy to use for embedding an attributed network. Of course, OpenANE can also deal with pure network by calling PNE methods, or by assigning all ones as the attributes and then calling ANE methods.
-
+In many real-world scenarios, a network often comes with node attributes such as paper metadata in a citation network, user profiles in a social network, and even node degrees in any pure networks. Unfortunately, PNE methods cannot make use of attribute information that may further improve the quality of node embeddings. 
+<br> From engineering perspective, by offering more APIs to handle attribute information in graph.py and utils.py, OpenANE shall be very easy to use for embedding an attributed network. Except attributed networks, OpenANE can also deal with pure networks by calling PNE methods, OR by assigning node degrees (or all-ones) as node attributes and then calling ANE methods. Therefore, to some extent, ANE methods can be regarded as a generalization of PNE methods.
 
 ## Methods
 [ABRW](https://github.com/houchengbin/ABRW),
@@ -21,8 +21,8 @@ In many real-world scenarios, a network often comes with node attributes such as
 [LINE](https://github.com/thunlp/OpenNE),
 [GraRep](https://github.com/thunlp/OpenNE),
 AttrPure,
-AttrComb,
-<br> Note: all NE methods in this framework are unsupervised.
+AttrComb
+<br> Note: all NE methods in this framework are unsupervised, and so do NOT require any labels during embedding phase.
 
 **For more details of each method, please have a look at our paper https://arxiv.org/abs/1811.11728**
 <br> And if you find ABRW or this framework is useful for your research, please consider citing it.
@@ -33,26 +33,26 @@ AttrComb,
 ```bash
 pip install -r requirements.txt
 ```
-Python 3.6 or above is required due to the [new print(f' ') feature](https://docs.python.org/3.6/reference/lexical_analysis.html#f-strings)
-#### To obtain node embeddings as well as evaluate the quality by default tasks
+Python 3.6.6 or above is required due to the new [*print(f' ')*](https://docs.python.org/3.6/reference/lexical_analysis.html#f-strings) feature
+#### To obtain node embeddings as well as evaluate the quality
 ```bash
-python src/main.py --method abrw --emb-file cora_abrw_emb --save-emb
+python src/main.py --method abrw --emb-file emb/cora_abrw_emb --save-emb --task lp_and_nc
 ```
 #### To have an intuitive feeling in node embeddings
 ```bash
-python src/viz.py --emb-file cora_abrw_emb --label-file data/cora_label
+python src/vis.py --emb-file emb/cora_abrw_emb --label-file data/cora/cora_label.txt
 ```
 
 
 ## Testing (Cora)
-### Parameter Setting
-Currently, we use the default parameters
+### Parameter Settings
+In this testing, we use the default parameters
 
 | AANE_lamb | AANE_maxiter | AANE_rho | ABRW_alpha | ABRW_topk | ASNE_lamb | AttrComb_mode | GraRep_kstep | LINE_negative_ratio | LINE_order | Node2Vec_p | Node2Vec_q | TADW_lamb | TADW_maxiter | batch_size | dim | dropout | epochs | label_reserved | learning_rate | link_remove | number_walks | walk_length | weight_decay | window_size | workers |
 |-----------|--------------|----------|------------|-----------|-----------|---------------|--------------|---------------------|------------|------------|------------|-----------|--------------|------------|-----|---------|--------|----------------|---------------|-------------|--------------|-------------|--------------|-------------|---------|
 | 0.05      | 10           | 5        | 0.8        | 30        | 1         | concat        | 4            | 5                   | 3          | 0.5        | 0.5        | 0.2       | 10           | 128        | 128 | 0.5     | 100    | 0.7            | 0.001         | 0.1         | 10           | 80          | 0.0001       | 10          | 24      |
 
-### Testing Result
+### Testing Results
 #### Link Prediction and Node Classification tasks:
 
 | method   | AUC    | Micro-F1 | Macro-F1 | Time     |
@@ -70,31 +70,30 @@ Currently, we use the default parameters
 | sagemean | 0.8882 | 0.8057   | 0.7902   | 183.65   |
 | tadw     | 0.9005 | 0.8383   | 0.8255   | 10.73    |
 
-#### Visualization task
-2D visualization results of the node embeddings on Cora dataset; 
-<br> Steps: Cora -> NE method -> node embeddings -> PCA -> 2D viz; 
-<br> The different colors indicate different ground truth labels;
-<br> ![Cora viz](https://github.com/houchengbin/OpenANE/blob/master/log/viz.jpg)
+#### 2D Visualization task
+![Cora vis](https://github.com/houchengbin/OpenANE/blob/master/log/vis.jpg)
+<br> Steps: Cora -> NE method -> node embeddings -> PCA -> 2D vis
+<br> The different colors indicate different ground truth labels.
 
 ## Other Datasets
 More well-prepared (attributed) network datasets are available at [NetEmb-Datasets](https://github.com/houchengbin/NetEmb-datasets)
 
-### Your own dataset
-**FILE for structural information (each row):**
-<br> adjlist: node_id1 node_id2 node_id3 -> (the edges between (id1, id2) and (id1, id3)) 
-<br> OR edgelist: node_id1 node_id2 weight(optional) -> one edge (id1, id2)
-<br> **FILE for attribute information (each row):**
+### Your Own Dataset
+*------ FILE for structural information (each row) ------*
+<br> adjlist: node_id1 node_id2 node_id3
+<br> or edgelist: node_id1 node_id2 weight(optional)
+<br> *------ FILE for attribute information (each row) ------*
 <br> node_id1 attr1 attr2 ... attrM
-<br> **FILE for label (each row):**
+<br> *------ FILE for label information (each row) ------*
 <br> node_id1 label(s)
 
-### Parameters Tuning
+### Parameter Tuning
 For different dataset, one may need to search the optimal parameters instead of taking the default parameters.
 For the meaning and suggestion of each parameter, please see main.py. 
 
 
 ## Want to contribute
-We highly welcome and appreciate your contributions on fixing bugs, reproducing new ANE methods, etc. And together, we hope this OpenANE framework would become influential on both academic research and industrial usage.
+We highly welcome and appreciate your contributions on fixing bugs, reproducing new ANE methods, etc. And we hope this OpenANE framework would become influential on both academic research and industrial usage.
 
 
 ## References
