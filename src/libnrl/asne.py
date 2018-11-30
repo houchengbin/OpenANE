@@ -15,7 +15,6 @@ import numpy as np
 import tensorflow as tf
 from sklearn.base import BaseEstimator, TransformerMixin
 import time
-#from .classify import ncClassifier, lpClassifier, read_node_label
 #from sklearn.linear_model import LogisticRegression
 
 class ASNE(BaseEstimator, TransformerMixin):

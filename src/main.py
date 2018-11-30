@@ -15,7 +15,7 @@ import random
 import numpy as np
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from sklearn.linear_model import LogisticRegression #to do... 1) put it in downstream.py; and 2) try SVM...
-from libnrl.classify import ncClassifier, lpClassifier, read_node_label
+from libnrl.downstream import ncClassifier, lpClassifier
 from libnrl.graph import *
 from libnrl.utils import *
 from libnrl import abrw #ANE method; Attributed Biased Random Walk
@@ -225,14 +225,14 @@ def main(args):
     del model, g
     #------lp task
     if args.task == 'lp' or args.task == 'lp_and_nc':
-        #X_test_lp, Y_test_lp = read_edge_label(args.label_file)  #if you want to load your own lp testing data
+        #X_test_lp, Y_test_lp = read_edge_label_downstream(args.label_file)  #if you want to load your own lp testing data
         print(f'Link Prediction task; the percentage of positive links for testing: {(args.link_remove*100):.2f}%'
                 + ' (by default, also generate equal negative links for testing)')
         clf = lpClassifier(vectors=vectors)     #similarity/distance metric as clf; basically, lp is a binary clf probelm
         clf.evaluate(test_node_pairs, test_edge_labels)
     #------nc task
     if args.task == 'nc' or args.task == 'lp_and_nc':
-        X, Y = read_node_label(args.label_file)
+        X, Y = read_node_label_downstream(args.label_file)
         print(f'Node Classification task; the percentage of labels for testing: {((1-args.label_reserved)*100):.2f}%')
         clf = ncClassifier(vectors=vectors, clf=LogisticRegression())   #use Logistic Regression as clf; we may choose SVM or more advanced ones
         clf.split_train_evaluate(X, Y, args.label_reserved)

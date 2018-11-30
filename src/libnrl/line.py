@@ -13,7 +13,8 @@ import math
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 import tensorflow as tf
-from .classify import ncClassifier, lpClassifier, read_node_label, read_edge_label #to do... try use lpClassifier to choose best embeddings?
+from .downstream import ncClassifier  # to do... try use lpClassifier to choose best embeddings?
+from .utils import read_node_label_downstream
 
 
 class _LINE(object):
@@ -219,7 +220,7 @@ class LINE(object):
                 self.model2.train_one_epoch()
                 if label_file:
                     self.get_embeddings()
-                    X, Y = read_node_label(label_file)
+                    X, Y = read_node_label_downstream(label_file)
                     print("Training classifier using {:.2f}% nodes...".format(clf_ratio*100))
                     clf = ncClassifier(vectors=self.vectors, clf=LogisticRegression())
                     result = clf.split_train_evaluate(X, Y, clf_ratio)
@@ -235,7 +236,7 @@ class LINE(object):
                 self.model.train_one_epoch()
                 if label_file:
                     self.get_embeddings()
-                    X, Y = read_node_label(label_file)
+                    X, Y = read_node_label_downstream(label_file)
                     print("Training classifier using {:.2f}% nodes...".format(clf_ratio*100))
                     clf = ncClassifier(vectors=self.vectors, clf=LogisticRegression())
                     result = clf.split_train_evaluate(X, Y, clf_ratio)
