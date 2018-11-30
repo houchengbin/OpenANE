@@ -4,8 +4,6 @@ import time
 import numpy as np
 from scipy import sparse
 
-# from sklearn.model_selection import train_test_split
-
 
 '''
 #-----------------------------------------------------------------------------
@@ -186,7 +184,6 @@ def generate_edges_for_linkpred(graph, edges_removed, balance_ratio=1.0):
     num_edges_removed = len(edges_removed)
     num_non_edges = int(balance_ratio * num_edges_removed)
     num = 0
-    # np.random.seed(2018)
     non_edges = []
     exist_edges = list(g.G.edges())+list(edges_removed)
     while num < num_non_edges:

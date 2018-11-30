@@ -132,10 +132,6 @@ class GCN(object):
                 mask[shuffle_indices[i]] = 1
             return mask
 
-        # nodes_num = len(self.labels)
-        # self.train_mask = sample_mask('train', nodes_num)
-        # self.val_mask = sample_mask('valid', nodes_num)
-        # self.test_mask = sample_mask('test', nodes_num)
         self.train_mask = sample_mask(0, training_size-100)
         self.val_mask = sample_mask(training_size-100, training_size)
         self.test_mask = sample_mask(training_size, g.number_of_nodes())

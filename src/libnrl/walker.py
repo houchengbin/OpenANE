@@ -69,62 +69,8 @@ class WeightedWalker:
         alias_nodes = {}                       # unlike node2vec, the reconstructed graph is based on transtion matrix
         for node in G.nodes():                 # no need to normalize again
             probs = [G[node][nbr]['weight'] for nbr in G.neighbors(node)]  # pick prob of neighbors with non-zero weight --> sum up to 1.0
-            # print(f'sum of prob: {np.sum(probs)}')
             alias_nodes[node] = alias_setup(probs)  # alias table format {node_id: (array1, array2)}
         self.alias_nodes = alias_nodes  # where array1 gives alias node indexes; array2 gives its prob
-        # print(self.alias_nodes)
-
-
-'''
-    #naive sampling for ABRW-------------------------------------------------------------------
-    def weighted_walk(self, start_node):
-        #
-        #Simulate a weighted walk starting from start node.
-        #
-        G = self.G
-        look_up_dict = self.look_up_dict
-        look_back_list = self.look_back_list
-        node_size = self.node_size
-        walk = [start_node]
-
-        while len(walk) < self.walk_length:
-            cur_node = walk[-1]        #the last one entry/node
-            cur_ind = look_up_dict[cur_node]        #key -> index
-            pdf = self.T[cur_ind,:]    #the pdf of node with ind
-            #pdf = np.random.randn(18163)+10  #......test multiprocessor
-            #pdf = pdf / pdf.sum()            #......test multiprocessor
-            #next_ind = int( np.array( nx.utils.random_sequence.discrete_sequence(n=1,distribution=pdf) ) )
-            next_ind = np.random.choice(len(pdf), 1, p=pdf)[0]  #faster than nx
-            #next_ind = 0                     #......test multiprocessor
-            next_node = look_back_list[next_ind]    #index -> key
-            walk.append(next_node)
-        return walk
-
-    def simulate_walks(self, num_walks, walk_length):
-        #
-        #Repeatedly simulate weighted walks from each node.
-        #
-        G = self.G
-        self.num_walks = num_walks
-        self.walk_length = walk_length
-        self.walks = []  #what we all need later as input to skip-gram
-        nodes = list(G.nodes())
-
-        print('Walk iteration:')
-        for walk_iter in range(num_walks):
-            t1 = time.time()
-            random.shuffle(nodes)
-            for node in nodes:                              #for single cpu, if # of nodes < 2000 (speed up) or nodes > 20000 (avoid memory error)
-                self.walks.append(self.weighted_walk(node)) #for single cpu, if # of nodes < 2000 (speed up) or nodes > 20000 (avoid memory error)
-            #pool = multiprocessing.Pool(processes=3)  #use all cpu by defalut or specify processes = xx
-            #self.walks.append(pool.map(self.weighted_walk, nodes))   #ref: https://stackoverflow.com/questions/8533318/multiprocessing-pool-when-to-use-apply-apply-async-or-map
-            #pool.close()
-            #pool.join()
-            t2 = time.time()
-            print(str(walk_iter+1), '/', str(num_walks), ' each itr last for: {:.2f}s'.format(t2-t1))
-        #self.walks = list(chain.from_iterable(self.walks))  #unlist...[[[x,x],[x,x]]] -> [x,x], [x,x]
-        return self.walks
-'''
 
 
 def deepwalk_walk_wrapper(class_instance, walk_length, start_node):
@@ -165,16 +111,11 @@ class BasicWalker:
         nodes = list(G.nodes())
         for walk_iter in range(num_walks):
             t1 = time.time()
-            # pool = multiprocessing.Pool(processes = 4)
             random.shuffle(nodes)
             for node in nodes:
-                # walks.append(pool.apply_async(deepwalk_walk_wrapper, (self, walk_length, node, )))
                 walks.append(self.deepwalk_walk(walk_length=walk_length, start_node=node))
-            # pool.close()
-            # pool.join()
             t2 = time.time()
             print(f'Walk iteration: {walk_iter+1}/{num_walks}; time cost: {(t2-t1):.2f}')
-        # print(len(walks))
         return walks
 
 
@@ -187,12 +128,10 @@ class Walker:
 
         if self.g.get_isweighted():
             # print('is weighted graph: ', self.g.get_isweighted())
-            # print(self.g.get_adj_mat(is_sparse=False)[0:6,0:6])
             pass
         else:  # otherwise, add equal weights 1.0 to all existing edges
             # print('is weighted graph: ', self.g.get_isweighted())
             self.g.add_edge_weight(equal_weight=1.0)  # add 'weight' to networkx graph
-            # print(self.g.get_adj_mat(is_sparse=False)[0:6,0:6])
 
         self.node_size = g.get_num_nodes()
         self.look_up_dict = g.look_up_dict

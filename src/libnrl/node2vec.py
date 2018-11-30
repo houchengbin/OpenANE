@@ -51,6 +51,5 @@ class Node2vec(object):
         node_num = len(self.vectors.keys())
         fout.write("{} {}\n".format(node_num, self.size))
         for node, vec in self.vectors.items():
-            fout.write("{} {}\n".format(node,
-                                        ' '.join([str(x) for x in vec])))
+            fout.write("{} {}\n".format(node, ' '.join([str(x) for x in vec])))
         fout.close()

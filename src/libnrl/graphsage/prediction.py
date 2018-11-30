@@ -44,8 +44,6 @@ class BipartiteEdgePredLayer(Layer):
         with tf.variable_scope(self.name + '_vars'):
             # bilinear form
             if bilinear_weights:
-                # self.vars['weights'] = glorot([input_dim1, input_dim2],
-                #                              name='pred_weights')
                 self.vars['weights'] = tf.get_variable(
                     'pred_weights',
                     shape=(input_dim1, input_dim2),

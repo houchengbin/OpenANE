@@ -53,8 +53,6 @@ class ASNE(BaseEstimator, TransformerMixin):
         self.graph = tf.Graph()
         # with self.graph.as_default(), tf.device('/gpu:0'):
         with self.graph.as_default():
-            # Set graph level random seed
-            # tf.set_random_seed(2018)
             # Input data.
             self.train_data_id = tf.placeholder(tf.int32, shape=[None])                   # batch_size * 1
             self.train_data_attr = tf.placeholder(tf.float32, shape=[None, self.attr_M])  # batch_size * attr_M
@@ -67,7 +65,7 @@ class ASNE(BaseEstimator, TransformerMixin):
             # Model.
             # Look up embeddings for node_id.
             self.id_embed = tf.nn.embedding_lookup(self.weights['in_embeddings'], self.train_data_id)  # batch_size * id_dim
-            self.attr_embed = tf.matmul(self.train_data_attr, self.weights['attr_embeddings'])        # batch_size * attr_dim
+            self.attr_embed = tf.matmul(self.train_data_attr, self.weights['attr_embeddings'])         # batch_size * attr_dim
             self.embed_layer = tf.concat([self.id_embed, self.alpha * self.attr_embed], 1)             # batch_size * (id_dim + attr_dim) #an error due to old tf!
 
             '''
@@ -90,7 +88,6 @@ class ASNE(BaseEstimator, TransformerMixin):
                                                                   inputs=self.embed_layer, labels=self.train_labels, num_sampled=self.n_neg_samples, num_classes=self.node_N))  # try inputs = self.embed_layer or self.h1 or self.h2 or ...
             # Optimizer.
             self.optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate, beta1=0.9, beta2=0.999, epsilon=1e-8).minimize(self.loss)
-            # print("AdamOptimizer")
 
             # init
             init = tf.initialize_all_variables()

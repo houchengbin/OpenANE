@@ -32,7 +32,6 @@ class ncClassifier(object):
     def split_train_evaluate(self, X, Y, train_precent, seed=0):
         state = np.random.get_state()
         training_size = int(train_precent * len(X))
-        # np.random.seed(seed)
         shuffle_indices = np.random.permutation(np.arange(len(X)))
         X_train = [X[shuffle_indices[i]] for i in range(training_size)]
         Y_train = [Y[shuffle_indices[i]] for i in range(training_size)]
@@ -94,7 +93,6 @@ class lpClassifier(object):
 
     # clf here is simply a similarity/distance metric
     def evaluate(self, X_test, Y_test, seed=0):
-        # np.random.seed(seed)
         test_size = len(X_test)
         # shuffle_indices = np.random.permutation(np.arange(test_size))
         # X_test = [X_test[shuffle_indices[i]] for i in range(test_size)]
@@ -160,7 +158,7 @@ def lp_train_test_split(graph, ratio=0.8, neg_pos_link_ratio=1.0):
     train_size = int(ratio * len(g.G.edges))
     test_size = len(g.G.edges) - train_size
 
-    # random.seed(2018) #generate testing set that contains both pos and neg samples
+    # generate testing set that contains both pos and neg samples
     test_pos_sample = random.sample(g.G.edges(), int(test_size))
     # test_neg_sample = random.sample(list(nx.classes.function.non_edges(g.G)), int(test_size * neg_pos_link_ratio)) #using nx build-in func, not efficient, to do...
     # more efficient way:

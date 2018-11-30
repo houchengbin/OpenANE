@@ -94,7 +94,6 @@ class Graph(object):
             edges_removed: return removed edges, each of which is a pair of nodes \n
         """
         num_edges_removed = int(ratio * self.G.number_of_edges())
-        # random.seed(2018)
         edges_removed = random.sample(self.G.edges(), int(num_edges_removed))
         print('before removing, the # of edges: ', self.G.number_of_edges())
         self.G.remove_edges_from(edges_removed)

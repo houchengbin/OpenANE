@@ -59,7 +59,6 @@ def save_val_embeddings(sess, model, minibatch_iter, size):
                 seen.add(edge[0])  # seen: a set; NO order!!!
 
     val_embeddings = np.vstack(val_embeddings)
-    # print(val_embeddings.shape)
     vectors = {}
     for i, embedding in enumerate(val_embeddings):
         vectors[nodes[i]] = embedding  # warning: seen: a set; nodes: a list
@@ -189,13 +188,11 @@ def train(train_data, test_data, model):
 
     config = tf.ConfigProto(log_device_placement=log_device_placement)
     config.gpu_options.allow_growth = True
-    # config.gpu_options.per_process_gpu_memory_fraction = GPU_MEM_FRACTION
     config.allow_soft_placement = True
 
     # Initialize session
     sess = tf.Session(config=config)
     merged = tf.summary.merge_all()
-    # summary_writer = tf.summary.FileWriter(log_dir(), sess.graph) #we ignore log file
 
     # Init variables
     sess.run(tf.global_variables_initializer(), feed_dict={adj_info_ph: minibatch.adj})
@@ -250,10 +247,7 @@ def train(train_data, test_data, model):
                 shadow_mrr = val_mrr
             else:
                 shadow_mrr -= (1-0.99) * (shadow_mrr - val_mrr)
-
-            # if total_steps % print_every == 0:
-                # summary_writer.add_summary(outs[0], total_steps)
-
+            
             iter += 1
             total_steps += 1
             if total_steps > max_total_steps:
@@ -285,7 +279,5 @@ def train(train_data, test_data, model):
             else:
                 print('val loss increasing @ ', epoch, ' w.r.t. last best epoch, and do not cover previous emb...')
 
-        # sess.run(val_adj_info.op)     #what is this for before get emb ? ignore it?????
-        # vectors = save_val_embeddings(sess, model, minibatch, validate_batch_size)
     print("Finished!")
     return vectors

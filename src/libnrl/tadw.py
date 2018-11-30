@@ -28,17 +28,6 @@ class TADW(object):
         self.train()
 
     def getAdj(self):
-        '''
-        graph = self.g.G
-        node_size = self.g.node_size
-        look_up = self.g.look_up_dict
-        adj = np.zeros((node_size, node_size))
-        for edge in self.g.G.edges():
-            adj[look_up[edge[0]]][look_up[edge[1]]] = 1.0
-            adj[look_up[edge[1]]][look_up[edge[0]]] = 1.0
-        # ScaleSimMat
-        return adj/np.sum(adj, axis=1)   #original may get numerical error sometimes...
-        '''
         A = self.g.get_adj_mat()  # by default, return a sparse matrix
         return np.array(row_as_probdist(A, dense_output=True, preserve_zeros=True))  # only support np.array, otherwise dim error...
 

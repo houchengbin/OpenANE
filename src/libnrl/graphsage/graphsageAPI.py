@@ -78,8 +78,6 @@ class graphSAGE(object):
             scaler = StandardScaler()
             scaler.fit(train_feats)
             feats = scaler.transform(feats)
-        # feats1 = nx.get_node_attributes(G,'test')
-        # feats2 = nx.get_node_attributes(G,'val')
         walks = []
         walks = self.run_random_walks(num_walks=self.num_walks, walk_len=self.walk_len)
         class_map = 0  # to do... use sklearn to make class into binary form, no need for unsupervised...
@@ -100,7 +98,6 @@ class graphSAGE(object):
                     if len(list(G.neighbors(curr_node))) == 0:  # isolated nodes! often appeared in real-world
                         break
                     next_node = random.choice(list(G.neighbors(curr_node)))  # changed due to compatibility
-                    # next_node = random.choice(G.neighbors(curr_node))
                     # self co-occurrences are useless
                     if curr_node != node:
                         pairs.append((node, curr_node))
