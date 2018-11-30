@@ -11,11 +11,6 @@ from libnrl.graphsage.aggregators import (GCNAggregator, MaxPoolingAggregator,
                                           MeanPoolingAggregator, SeqAggregator)
 from libnrl.graphsage.prediction import BipartiteEdgePredLayer
 
-'''
-flags = tf.app.flags
-FLAGS = FLAGS
-'''
-
 # DISCLAIMER:
 # Boilerplate parts of this code file were originally forked from
 # https://github.com/tkipf/gcn

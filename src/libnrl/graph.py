@@ -77,17 +77,6 @@ class Graph(object):
                 vec = l.split()
                 self.G.nodes[vec[0]]['attr'] = np.array([float(x) for x in vec[1:]])
 
-    def read_node_label(self, path):
-        """ todo... read node labels and store as NetworkX graph {'node_id': {'label': values}} \n
-            input file format: node_id1 labels \n
-                               node_id2 labels \n
-        with open(path, 'r') as fin: \n
-            for l in fin.readlines(): \n
-                vec = l.split() \n
-                self.G.nodes[vec[0]]['label'] = np.array([float(x) for x in vec[1:]]) \n
-        """
-        pass  # to do...
-
     def remove_edge(self, ratio=0.0):
         """ randomly remove edges/links \n
             ratio: the percentage of edges to be removed \n
@@ -99,17 +88,6 @@ class Graph(object):
         self.G.remove_edges_from(edges_removed)
         print('after removing, the # of edges: ', self.G.number_of_edges())
         return edges_removed
-
-    def remove_node_attr(self, ratio):
-        """ todo... randomly remove node attributes; \n
-        """
-        pass  # to do...
-
-    def remove_node(self, ratio):
-        """ todo... randomly remove nodes; \n
-            #self.node_mapping() #update node id index mapping is needed \n
-        """
-        pass  # to do...
 
     # ------------------------------------------------------------------------------------------
     # --------------------commonly used APIs that will not modify graph-------------------------
@@ -164,9 +142,3 @@ class Graph(object):
     def get_common_neighbors(self, node1, node2):
         """ return common neighbors of two nodes """
         return list(nx.common_neighbors(self.G, node1, node2))
-
-    def get_centrality(self, centrality_type='degree'):
-        """ todo... return specified type of centrality \n
-            see https://networkx.github.io/documentation/stable/reference/algorithms/centrality.html \n
-        """
-        pass  # to do...

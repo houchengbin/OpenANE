@@ -36,7 +36,6 @@ class TADW(object):
         look_back = self.g.look_back_list
         self.features = np.vstack([g.nodes[look_back[i]]['attr']
                                    for i in range(g.number_of_nodes())])
-        # self.features = self.g.get_attr_mat().todense()
         self.preprocessFeature()
         return self.features.T
 
@@ -46,8 +45,6 @@ class TADW(object):
             Ud = U[:, 0:200]
             Sd = S[0:200]
             self.features = np.array(Ud)*Sd.reshape(200)
-            # from .utils import dim_reduction
-            # self.features = dim_reduction(self.features, dim=200, method='svd')
 
     def train(self):
         self.adj = self.getAdj()

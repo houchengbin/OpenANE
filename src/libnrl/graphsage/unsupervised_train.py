@@ -258,11 +258,7 @@ def train(train_data, test_data, model):
         # only print the last iter result at the end of each epoch
         print("Epoch:", '%04d' % epoch,
               "train_loss=", "{:.5f}".format(train_cost),
-              # "train_mrr=", "{:.5f}".format(train_mrr),
-              # "train_mrr_ema=", "{:.5f}".format(train_shadow_mrr),
               "val_loss=", "{:.5f}".format(val_cost),
-              # "val_mrr=", "{:.5f}".format(val_mrr),
-              # "val_mrr_ema=", "{:.5f}".format(shadow_mrr),
               "time cost", "{:.2f}".format(t2-t1))
 
         # no early stopping was used in original code---------------- auto-save-best-emb ------------------------------

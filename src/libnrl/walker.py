@@ -23,9 +23,6 @@ class WeightedWalker:
         self.T = transition_mat
         self.workers = workers
         self.rec_G = nx.to_networkx_graph(self.T, create_using=nx.DiGraph())  # reconstructed "directed" "weighted" graph based on transition matrix
-        # print(nx.adjacency_matrix(self.rec_G).todense()[0:6, 0:6])
-        # print(transition_mat[0:6, 0:6])
-        # print(nx.adjacency_matrix(self.rec_G).todense()==transition_mat)
 
     # alias sampling for ABRW-------------------------
     def simulate_walks(self, num_walks, walk_length):

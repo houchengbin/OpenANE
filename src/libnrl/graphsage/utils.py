@@ -18,7 +18,6 @@ from networkx.readwrite import json_graph
 version_info = list(map(int, nx.__version__.split('.')))
 major = version_info[0]
 minor = version_info[1]
-#assert (major <= 1) and (minor <= 11), "networkx major version > 1.11"
 
 WALK_LEN = 5
 N_WALKS = 50
@@ -27,12 +26,6 @@ N_WALKS = 50
 def load_data(prefix, normalize=True, load_walks=False):
     G_data = json.load(open(prefix + "-G.json"))
     G = json_graph.node_link_graph(G_data)
-    '''
-    if isinstance(G.nodes()[0], int):
-        conversion = lambda n : int(n)
-    else:
-        conversion = lambda n : n
-    '''
     def conversion(n): return int(n)  # compatible with networkx >2.0
 
     if os.path.exists(prefix + "-feats.npy"):
@@ -61,7 +54,7 @@ def load_data(prefix, normalize=True, load_walks=False):
     print("Removed {:d} nodes that lacked proper annotations due to networkx versioning issues".format(broken_count))
 
     # Make sure the graph has edge train_removed annotations
-    # (some datasets might already have this..)
+    # some datasets might already have this
     print("Loaded data.. now preprocessing..")
     for edge in G.edges():
         if (G.node[edge[0]]['val'] or G.node[edge[1]]['val'] or
@@ -104,7 +97,7 @@ def run_random_walks(G, nodes, num_walks=N_WALKS):
     return pairs
 
 
-if __name__ == "__main__":  # 这个地方需要改写，可以每次运行都跑一次
+if __name__ == "__main__":
     """ Run random walks """
     graph_file = sys.argv[1]
     out_file = sys.argv[2]

@@ -73,7 +73,7 @@ class ATTRCOMB(object):
                 nrl_embeddings.append(model.vectors[key])
             return np.array(nrl_embeddings)
 
-        elif comb_with == 'node2vec':  # to do... the parameters
+        elif comb_with == 'node2vec':
             model = node2vec.Node2vec(graph=self.g, path_length=80, num_paths=self.number_walks,
                                       dim=dim, workers=4, p=0.8, q=0.8, window=10)
             nrl_embeddings = []

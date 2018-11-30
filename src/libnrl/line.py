@@ -16,8 +16,7 @@ import numpy as np
 import tensorflow as tf
 from sklearn.linear_model import LogisticRegression
 
-from .downstream import \
-    ncClassifier  # to do... try use lpClassifier to choose best embeddings?
+from .downstream import ncClassifier
 from .utils import read_node_label_downstream
 
 
@@ -48,9 +47,6 @@ class _LINE(object):
         cur_seed = random.getrandbits(32)
         self.embeddings = tf.get_variable(name="embeddings"+str(self.order), shape=[self.node_size, self.rep_size], initializer=tf.contrib.layers.xavier_initializer(uniform=False, seed=cur_seed))
         self.context_embeddings = tf.get_variable(name="context_embeddings"+str(self.order), shape=[self.node_size, self.rep_size], initializer=tf.contrib.layers.xavier_initializer(uniform=False, seed=cur_seed))
-        # self.h_e = tf.nn.l2_normalize(tf.nn.embedding_lookup(self.embeddings, self.h), 1)
-        # self.t_e = tf.nn.l2_normalize(tf.nn.embedding_lookup(self.embeddings, self.t), 1)
-        # self.t_e_context = tf.nn.l2_normalize(tf.nn.embedding_lookup(self.context_embeddings, self.t), 1)
         self.h_e = tf.nn.embedding_lookup(self.embeddings, self.h)
         self.t_e = tf.nn.embedding_lookup(self.embeddings, self.t)
         self.t_e_context = tf.nn.embedding_lookup(self.context_embeddings, self.t)
@@ -88,7 +84,6 @@ class _LINE(object):
         edges = [(look_up[x[0]], look_up[x[1]]) for x in self.g.G.edges()]
 
         data_size = self.g.G.number_of_edges()
-        # edge_set = set([x[0]*numNodes+x[1] for x in edges])
         shuffle_indices = np.random.permutation(np.arange(data_size))
 
         # positive or negative mod
@@ -193,7 +188,6 @@ class _LINE(object):
     def get_embeddings(self):
         vectors = {}
         embeddings = self.embeddings.eval(session=self.sess)
-        # embeddings = self.sess.run(tf.nn.l2_normalize(self.embeddings.eval(session=self.sess), 1))
         look_back = self.g.look_back_list
         for i, embedding in enumerate(embeddings):
             vectors[look_back[i]] = embedding

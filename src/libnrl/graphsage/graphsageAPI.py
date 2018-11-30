@@ -30,11 +30,6 @@ class graphSAGE(object):
         if not is_supervised:
             from libnrl.graphsage import unsupervised_train
             self.vectors = unsupervised_train.train(train_data=train_data, test_data=None, model=sage_model)
-        else:
-            # to do...
-            # from libnrl.graphsage import supervised_train
-            # self.vectors = supervised_train.train()
-            pass
 
     def add_train_val_test_to_G(self, test_perc=0.0, val_perc=0.1):
         ''' add if 'val' and/or 'test' to each node in G '''
@@ -54,7 +49,7 @@ class graphSAGE(object):
                 G.nodes[id]['test'] = False
                 G.nodes[id]['val'] = False
         # Make sure the graph has edge train_removed annotations
-        # (some datasets might already have this..)
+        # some datasets might already have this
         print("Loaded data.. now preprocessing..")
         for edge in G.edges():
             if (G.node[edge[0]]['val'] or G.node[edge[1]]['val'] or

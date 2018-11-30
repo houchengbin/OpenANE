@@ -22,7 +22,6 @@ from libnrl import line  # PNE method
 from libnrl import tadw  # ANE method
 from libnrl.downstream import lpClassifier, ncClassifier
 from libnrl.graph import Graph
-# from libnrl.gcn import gcnAPI  # ANE method
 from libnrl.graphsage import graphsageAPI  # ANE method
 from libnrl.grarep import GraRep  # PNE method
 from libnrl.utils import generate_edges_for_linkpred, read_node_label_downstream
@@ -30,8 +29,6 @@ from libnrl.utils import generate_edges_for_linkpred, read_node_label_downstream
 from sklearn.linear_model import LogisticRegression  # to do... 1) put it in downstream.py; and 2) try SVM...
 from libnrl import abrw  # ANE method; Attributed Biased Random Walk
 from libnrl import node2vec  # PNE method; including deepwalk and node2vec
-# from libnrl import TriDNR #to do... ANE method
-# https://github.com/dfdazac/dgi #to do... ANE method
 
 
 def parse_args():
@@ -51,10 +48,6 @@ def parse_args():
                         help='choices of downstream tasks: none, lp, nc, lp_and_nc')
     parser.add_argument('--link-remove', default=0.1, type=float,
                         help='simulate randomly missing links if necessary; a ratio ranging [0.0, 1.0]')
-    # parser.add_argument('--attr-remove', default=0.0, type=float,
-    #                    help='simulate randomly missing attributes if necessary; a ratio ranging [0.0, 1.0]')
-    # parser.add_argument('--link-reserved', default=0.7, type=float,
-    #                    help='for lp task, train/test split, a ratio ranging [0.0, 1.0]')
     parser.add_argument('--label-reserved', default=0.7, type=float,
                         help='for nc task, train/test split, a ratio ranging [0.0, 1.0]')
     parser.add_argument('--directed', default=False, action='store_true',
@@ -141,7 +134,6 @@ def main(args):
         assert args.attribute_file != ''
         g.read_node_attr(args.attribute_file)
     # load node label info------
-    # to do... similar to attribute {'key_attribute': value}, label also loaded as {'key_label': value}
     t2 = time.time()
     print(f'STEP1: end loading data; time cost: {(t2-t1):.2f}s')
 
@@ -204,16 +196,6 @@ def main(args):
         model.save_embeddings(args.emb_file + time.strftime(' %Y%m%d-%H%M%S', time.localtime()))
         print(f'Save node embeddings in file: {args.emb_file}')
 
-    '''
-    #to do.... semi-supervised methods: gcn, graphsage, etc...
-    if args.method == 'gcn':   #semi-supervised gcn
-        assert args.label_file != ''
-        assert args.feature_file != ''
-        g.read_node_label(args.label_file)
-        model = gcnAPI.GCN(graph=g, dropout=args.dropout, weight_decay=args.weight_decay, hidden1=args.hidden, epochs=args.epochs, clf_ratio=args.label_reserved)
-        print('semi-supervsied method, no embs, exit the program...') #semi-supervised gcn do not produce embs
-        exit(0)
-    '''
 
     # ---------------------------------------STEP4: downstream task-----------------------------------------------
     print('\nSTEP4: start evaluating ......: ')
@@ -222,7 +204,6 @@ def main(args):
     del model, g
     # ------lp task
     if args.task == 'lp' or args.task == 'lp_and_nc':
-        # X_test_lp, Y_test_lp = read_edge_label_downstream(args.label_file)  # if you want to load your own lp testing data
         print(f'Link Prediction task; the percentage of positive links for testing: {(args.link_remove*100):.2f}%' + ' (by default, also generate equal negative links for testing)')
         clf = lpClassifier(vectors=vectors)  # similarity/distance metric as clf; basically, lp is a binary clf probelm
         clf.evaluate(test_node_pairs, test_edge_labels)
@@ -238,7 +219,5 @@ def main(args):
 
 if __name__ == '__main__':
     print(f'------ START @ {time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime())} ------')
-    # random.seed(2018)
-    # np.random.seed(2018)
     main(parse_args())
     print(f'------ END @ {time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime())} ------')
