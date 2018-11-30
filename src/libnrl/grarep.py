@@ -6,34 +6,24 @@ modified by Chengbin Hou 2018
 originally from https://github.com/thunlp/OpenNE/blob/master/src/openne/grarep.py
 """
 
-import math
 import numpy as np
 from numpy import linalg as la
 from sklearn.preprocessing import normalize
+
 from .utils import row_as_probdist
 
+
 class GraRep(object):
-    
+
     def __init__(self, graph, Kstep, dim):
         self.g = graph
         self.Kstep = Kstep
-        assert dim%Kstep == 0
+        assert dim % Kstep == 0
         self.dim = int(dim/Kstep)
         self.train()
 
     def getAdjMat(self):
-        '''
-        graph = self.g.G
-        node_size = self.g.get_num_nodes()
-        look_up = self.g.look_up_dict
-        adj = np.zeros((node_size, node_size))
-        for edge in self.g.G.edges():
-            adj[look_up[edge[0]]][look_up[edge[1]]] = 1.0
-            adj[look_up[edge[1]]][look_up[edge[0]]] = 1.0
-        # ScaleSimMat
-        return np.matrix(adj/np.sum(adj, axis=1))
-        '''
-        adj = self.g.get_adj_mat() #for isolated node row, normalize to [1/n, 1/n, ...]
+        adj = self.g.get_adj_mat()  # for isolated node row, normalize to [1/n, 1/n, ...]
         return row_as_probdist(adj, dense_output=True, preserve_zeros=False)
 
     def GetProbTranMat(self, Ak):
@@ -55,7 +45,7 @@ class GraRep(object):
         node_num = len(self.vectors.keys())
         fout.write("{} {}\n".format(node_num, self.Kstep*self.dim))
         for node, vec in self.vectors.items():
-            fout.write("{} {}\n".format(node,' '.join([str(x) for x in vec])))
+            fout.write("{} {}\n".format(node, ' '.join([str(x) for x in vec])))
         fout.close()
 
     def train(self):
@@ -75,7 +65,3 @@ class GraRep(object):
         look_back = self.g.look_back_list
         for i, embedding in enumerate(self.RepMat):
             self.vectors[look_back[i]] = embedding
-
-
-
-

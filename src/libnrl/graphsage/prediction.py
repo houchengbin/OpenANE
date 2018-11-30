@@ -1,9 +1,9 @@
-from __future__ import division
-from __future__ import print_function
+from __future__ import division, print_function
+
+import tensorflow as tf
 
 from libnrl.graphsage.inits import zeros
 from libnrl.graphsage.layers import Layer
-import tensorflow as tf
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -11,8 +11,8 @@ FLAGS = flags.FLAGS
 
 class BipartiteEdgePredLayer(Layer):
     def __init__(self, input_dim1, input_dim2, placeholders, dropout=False, act=tf.nn.sigmoid,
-            loss_fn='xent', neg_sample_weights=1.0,
-            bias=False, bilinear_weights=False, **kwargs):
+                 loss_fn='xent', neg_sample_weights=1.0,
+                 bias=False, bilinear_weights=False, **kwargs):
         """
         Basic class that applies skip-gram-like loss
         (i.e., dot product of node+target and node and negative samples)
@@ -44,13 +44,11 @@ class BipartiteEdgePredLayer(Layer):
         with tf.variable_scope(self.name + '_vars'):
             # bilinear form
             if bilinear_weights:
-                #self.vars['weights'] = glorot([input_dim1, input_dim2],
-                #                              name='pred_weights')
                 self.vars['weights'] = tf.get_variable(
-                        'pred_weights', 
-                        shape=(input_dim1, input_dim2),
-                        dtype=tf.float32, 
-                        initializer=tf.contrib.layers.xavier_initializer())
+                    'pred_weights',
+                    shape=(input_dim1, input_dim2),
+                    dtype=tf.float32,
+                    initializer=tf.contrib.layers.xavier_initializer())
 
             if self.bias:
                 self.vars['bias'] = zeros([self.output_dim], name='bias')
@@ -103,9 +101,9 @@ class BipartiteEdgePredLayer(Layer):
         aff = self.affinity(inputs1, inputs2)
         neg_aff = self.neg_cost(inputs1, neg_samples, hard_neg_samples)
         true_xent = tf.nn.sigmoid_cross_entropy_with_logits(
-                labels=tf.ones_like(aff), logits=aff)
+            labels=tf.ones_like(aff), logits=aff)
         negative_xent = tf.nn.sigmoid_cross_entropy_with_logits(
-                labels=tf.zeros_like(neg_aff), logits=neg_aff)
+            labels=tf.zeros_like(neg_aff), logits=neg_aff)
         loss = tf.reduce_sum(true_xent) + self.neg_sample_weights * tf.reduce_sum(negative_xent)
         return loss
 

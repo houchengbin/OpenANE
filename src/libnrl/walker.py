@@ -1,5 +1,5 @@
 """
-(weighted) random walks for walk-based NE methods: 
+(weighted) random walks for walk-based NE methods:
 DeepWalk, Node2Vec, TriDNR, and ABRW;
 alias sampling; walks by multiprocessors; etc.
 
@@ -10,6 +10,7 @@ import functools
 import multiprocessing
 import random
 import time
+
 import numpy as np
 from networkx import nx
 
@@ -23,16 +24,12 @@ class WeightedWalker:
         self.look_back_list = node_id_map
         self.T = transition_mat
         self.workers = workers
-        # self.rec_G = nx.to_networkx_graph(self.T, create_using=nx.Graph())  # wrong... will return symt transition mat
         self.rec_G = nx.to_networkx_graph(self.T, create_using=nx.DiGraph())  # reconstructed "directed" "weighted" graph based on transition matrix
-        # print(nx.adjacency_matrix(self.rec_G).todense()[0:6, 0:6])
-        # print(transition_mat[0:6, 0:6])
-        # print(nx.adjacency_matrix(self.rec_G).todense()==transition_mat)
 
     # alias sampling for ABRW-------------------------
     def simulate_walks(self, num_walks, walk_length):
         global P_G
-        P_G = self.G
+        P_G = self.rec_G
         
         t1 = time.time()
         self.preprocess_transition_probs(weighted_G=self.rec_G)  # construct alias table; adapted from node2vec
@@ -55,7 +52,7 @@ class WeightedWalker:
         pool.join()
         del alias_nodes, P_G
 
-        for i in range(len(walks)): # use ind to retrive orignal node ID
+        for i in range(len(walks)):  # use ind to retrive original node ID
             for j in range(len(walks[0])):
                 walks[i][j] = self.look_back_list[int(walks[i][j])]
         return walks
@@ -101,6 +98,8 @@ def deepwalk_walk_wrapper(class_instance, walk_length, start_node):
     class_instance.deepwalk_walk(walk_length, start_node)
 
 # ===========================================deepWalk-walker============================================
+
+
 class BasicWalker:
     def __init__(self, g, workers):
         self.g = g
@@ -112,8 +111,6 @@ class BasicWalker:
         Simulate a random walk starting from start node.
         '''
         G = self.g.G
-        look_up_dict = self.look_up_dict
-        node_size = self.node_size
 
         walk = [start_node]
 
@@ -135,16 +132,11 @@ class BasicWalker:
         nodes = list(G.nodes())
         for walk_iter in range(num_walks):
             t1 = time.time()
-            # pool = multiprocessing.Pool(processes = 4)
             random.shuffle(nodes)
             for node in nodes:
-                # walks.append(pool.apply_async(deepwalk_walk_wrapper, (self, walk_length, node, )))
                 walks.append(self.deepwalk_walk(walk_length=walk_length, start_node=node))
-            # pool.close()
-            # pool.join()
             t2 = time.time()
             print(f'Walk iteration: {walk_iter+1}/{num_walks}; time cost: {(t2-t1):.2f}')
-        # print(len(walks))
         return walks
 
 
@@ -156,14 +148,12 @@ class Walker:
         self.q = q
 
         if self.g.get_isweighted():
-            #print('is weighted graph: ', self.g.get_isweighted())
-            #print(self.g.get_adj_mat(is_sparse=False)[0:6,0:6])
+            # print('is weighted graph: ', self.g.get_isweighted())
             pass
-        else: #otherwise, add equal weights 1.0 to all existing edges
-            #print('is weighted graph: ', self.g.get_isweighted())
-            self.g.add_edge_weight(equal_weight=1.0) #add 'weight' to networkx graph
-            #print(self.g.get_adj_mat(is_sparse=False)[0:6,0:6])
-        
+        else:  # otherwise, add equal weights 1.0 to all existing edges
+            # print('is weighted graph: ', self.g.get_isweighted())
+            self.g.add_edge_weight(equal_weight=1.0)  # add 'weight' to networkx graph
+
         self.node_size = g.get_num_nodes()
         self.look_up_dict = g.look_up_dict
 
@@ -174,8 +164,6 @@ class Walker:
         G = self.g.G
         alias_nodes = self.alias_nodes
         alias_edges = self.alias_edges
-        look_up_dict = self.look_up_dict
-        node_size = self.node_size
 
         walk = [start_node]
 
@@ -236,20 +224,17 @@ class Walker:
         G = self.g.G
         alias_nodes = {}
         for node in G.nodes():
-            unnormalized_probs = [G[node][nbr]['weight'] for nbr in G.neighbors(node)] #pick prob of neighbors with non-zero weight
+            unnormalized_probs = [G[node][nbr]['weight'] for nbr in G.neighbors(node)]  # pick prob of neighbors with non-zero weight
             norm_const = sum(unnormalized_probs)
             normalized_probs = [float(u_prob)/norm_const for u_prob in unnormalized_probs]
             alias_nodes[node] = alias_setup(normalized_probs)
 
         alias_edges = {}
-        triads = {}
 
-        look_up_dict = self.look_up_dict
-        node_size = self.node_size
         if self.g.get_isdirected():
             for edge in G.edges():
                 alias_edges[edge] = self.get_alias_edge(edge[0], edge[1])
-        else: #if undirected, duplicate the reverse direction; otherwise may get key error
+        else:  # if undirected, duplicate the reverse direction; otherwise may get key error
             for edge in G.edges():
                 alias_edges[edge] = self.get_alias_edge(edge[0], edge[1])
                 alias_edges[(edge[1], edge[0])] = self.get_alias_edge(edge[1], edge[0])
@@ -258,7 +243,7 @@ class Walker:
         self.alias_edges = alias_edges
 
 
-#========================================= utils: alias sampling method ====================================================
+# ========================================= utils: alias sampling method ====================================================
 def alias_setup(probs):
     '''
     Compute utility lists for non-uniform sampling from discrete distributions.
@@ -278,7 +263,7 @@ def alias_setup(probs):
         else:
             larger.append(kk)
 
-    while len(smaller) > 0 and len(larger) > 0: #it is all about use large prob to compensate small prob untill reach the average
+    while len(smaller) > 0 and len(larger) > 0:  # it is all about use large prob to compensate small prob untill reach the average
         small = smaller.pop()
         large = larger.pop()
 
@@ -289,7 +274,7 @@ def alias_setup(probs):
         else:
             larger.append(large)
 
-    return J, q  #the values in J are indexes; it is possible to have repeated indexes if that that index have large prob to compensate others
+    return J, q  # the values in J are indexes; it is possible to have repeated indexes if that that index have large prob to compensate others
 
 
 def alias_draw(J, q):
@@ -298,8 +283,8 @@ def alias_draw(J, q):
     '''
     K = len(J)
 
-    kk = int(np.floor(np.random.rand()*K)) #randomly choose a nbr (an index)
-    if np.random.rand() < q[kk]:           #use alias table to choose
-        return kk                          #either that nbr node (an index)
+    kk = int(np.floor(np.random.rand()*K))  # randomly choose a nbr (an index)
+    if np.random.rand() < q[kk]:  # use alias table to choose
+        return kk  # either that nbr node (an index)
     else:
-        return J[kk]                       #or the nbr's alias node (an index)
+        return J[kk]  # or the nbr's alias node (an index)

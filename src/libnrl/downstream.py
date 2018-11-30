@@ -5,16 +5,12 @@ import math
 import random
 import warnings
 
-import networkx as nx
 import numpy as np
-from sklearn.metrics import (accuracy_score, auc, classification_report,
-                             f1_score, roc_auc_score, roc_curve)
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
 
-warnings.filterwarnings(
-    action='ignore', category=UserWarning, module='sklearn')
+warnings.filterwarnings(action='ignore', category=UserWarning, module='sklearn')
 
 '''
 #-----------------------------------------------------------------------------
@@ -36,7 +32,6 @@ class ncClassifier(object):
     def split_train_evaluate(self, X, Y, train_precent, seed=0):
         state = np.random.get_state()
         training_size = int(train_precent * len(X))
-        # np.random.seed(seed)
         shuffle_indices = np.random.permutation(np.arange(len(X)))
         X_train = [X[shuffle_indices[i]] for i in range(training_size)]
         Y_train = [Y[shuffle_indices[i]] for i in range(training_size)]
@@ -44,7 +39,7 @@ class ncClassifier(object):
         Y_test = [Y[shuffle_indices[i]] for i in range(training_size, len(X))]
 
         self.train(X_train, Y_train, Y)
-        np.random.set_state(state)  # why??? for binarizer.transform??
+        np.random.set_state(state)
         return self.evaluate(X_test, Y_test)
 
     def train(self, X, Y, Y_all):
@@ -71,7 +66,6 @@ class ncClassifier(object):
         results = {}
         for average in averages:
             results[average] = f1_score(Y, Y_, average=average)
-        # print('Results, using embeddings of dimensionality', len(self.embeddings[X[0]]))
         print(results)
         return results
 
@@ -98,13 +92,7 @@ class lpClassifier(object):
 
     # clf here is simply a similarity/distance metric
     def evaluate(self, X_test, Y_test, seed=0):
-        state = np.random.get_state()
-        # np.random.seed(seed)
         test_size = len(X_test)
-        # shuffle_indices = np.random.permutation(np.arange(test_size))
-        # X_test = [X_test[shuffle_indices[i]] for i in range(test_size)]
-        # Y_test = [Y_test[shuffle_indices[i]] for i in range(test_size)]
-
         Y_true = [int(i) for i in Y_test]
         Y_probs = []
         for i in range(test_size):
@@ -121,7 +109,6 @@ class lpClassifier(object):
         if roc < 0.5:
             roc = 1.0 - roc  # since lp is binary clf task, just predict the opposite if<0.5
         print("roc=", "{:.9f}".format(roc))
-        # plt_roc(Y_true, Y_probs) #enable to plot roc curve and return auc value
 
 
 def norm(a):
@@ -135,17 +122,7 @@ def cosine_similarity(a, b):
     sum = 0.0
     for i in range(len(a)):
         sum = sum + a[i] * b[i]
-    # return sum/(norm(a) * norm(b))
-    # fix numerical issue 1e-100 almost = 0!
     return sum / (norm(a) * norm(b) + 1e-100)
-
-
-'''
-#cosine_similarity realized by use...
-#or try sklearn....
-        from sklearn.metrics.pairwise import linear_kernel, cosine_similarity, cosine_distances, euclidean_distances  # we may try diff metrics
-        #ref http://scikit-learn.org/stable/modules/classes.html#module-sklearn.metrics.pairwise
-'''
 
 
 def lp_train_test_split(graph, ratio=0.8, neg_pos_link_ratio=1.0):
@@ -165,10 +142,8 @@ def lp_train_test_split(graph, ratio=0.8, neg_pos_link_ratio=1.0):
     train_size = int(ratio * len(g.G.edges))
     test_size = len(g.G.edges) - train_size
 
-    # random.seed(2018) #generate testing set that contains both pos and neg samples
+    # generate testing set that contains both pos and neg samples
     test_pos_sample = random.sample(g.G.edges(), int(test_size))
-    # test_neg_sample = random.sample(list(nx.classes.function.non_edges(g.G)), int(test_size * neg_pos_link_ratio)) #using nx build-in func, not efficient, to do...
-    # more efficient way:
     test_neg_sample = []
     num_neg_sample = int(test_size * neg_pos_link_ratio)
     num = 0

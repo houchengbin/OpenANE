@@ -7,11 +7,14 @@ originally from https://github.com/thunlp/OpenNE/blob/master/src/openne/node2vec
 """
 
 from __future__ import print_function
-import time
+
 import warnings
-warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
+
 from gensim.models import Word2Vec
+
 from . import walker
+
+warnings.filterwarnings(action='ignore', category=UserWarning, module='gensim')
 
 
 class Node2vec(object):
@@ -24,9 +27,9 @@ class Node2vec(object):
 
         self.graph = graph
         if dw:
-            self.walker = walker.BasicWalker(graph, workers=kwargs["workers"])       #walker for deepwalk
+            self.walker = walker.BasicWalker(graph, workers=kwargs["workers"])  # walker for deepwalk
         else:
-            self.walker = walker.Walker(graph, p=p, q=q, workers=kwargs["workers"])  #walker for node2vec
+            self.walker = walker.Walker(graph, p=p, q=q, workers=kwargs["workers"])  # walker for node2vec
             print("Preprocess transition probs...")
             self.walker.preprocess_transition_probs()
         sentences = self.walker.simulate_walks(num_walks=num_paths, walk_length=path_length)
@@ -48,6 +51,5 @@ class Node2vec(object):
         node_num = len(self.vectors.keys())
         fout.write("{} {}\n".format(node_num, self.size))
         for node, vec in self.vectors.items():
-            fout.write("{} {}\n".format(node,
-                                        ' '.join([str(x) for x in vec])))
+            fout.write("{} {}\n".format(node, ' '.join([str(x) for x in vec])))
         fout.close()

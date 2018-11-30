@@ -12,6 +12,7 @@ from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import svds
 from math import ceil
 
+
 class AANE:
     """Jointly embed Net and Attri into embedding representation H
     H = AANE(Net,Attri,d).function()
@@ -31,9 +32,10 @@ class AANE:
     Copyright 2017 & 2018, Xiao Huang and Jundong Li.
     $Revision: 1.0.2 $  $Date: 2018/02/19 00:00:00 $
     """
+
     def __init__(self, graph, dim, lambd=0.05, rho=5, maxiter=5, mode='comb', *varargs):
         self.dim = dim
-        self.look_back_list = graph.look_back_list #look back node id for Net and Attr
+        self.look_back_list = graph.look_back_list  # look back node id for Net and Attr
         self.lambd = lambd  # Initial regularization parameter
         self.rho = rho  # Initial penalty parameter
         self.maxiter = maxiter  # Max num of iteration
@@ -48,7 +50,7 @@ class AANE:
             Attri = Net
         else:
             exit(0)
-        
+
         [self.n, m] = Attri.shape  # n = Total num of nodes, m = attribute category num
         Net = sparse.lil_matrix(Net)
         Net.setdiag(np.zeros(self.n))
@@ -80,10 +82,10 @@ class AANE:
         self.Net = np.split(Net.data, Net.indptr[1:-1])
 
         self.vectors = {}
-        self.function()  #run aane----------------------------
-
+        self.function()  # run aane----------------------------
 
     '''################# Update functions #################'''
+
     def updateH(self):
         xtx = np.dot(self.Z.transpose(), self.Z) * 2 + self.rho * np.eye(self.dim)
         for blocki in range(self.splitnum):  # Split nodes into different Blocks
@@ -100,11 +102,12 @@ class AANE:
                     if np.any(nzidx):
                         normi_j = (self.lambd * self.Net[i][nzidx]) / normi_j[nzidx]
                         self.H[i, :] = np.linalg.solve(xtx + normi_j.sum() * np.eye(self.dim), sums[i - indexblock, :] + (
-                                    neighbor[nzidx, :] * normi_j.reshape((-1, 1))).sum(0) + self.rho * (
-                                                                   self.Z[i, :] - self.U[i, :]))
+                            neighbor[nzidx, :] * normi_j.reshape((-1, 1))).sum(0) + self.rho * (
+                            self.Z[i, :] - self.U[i, :]))
                     else:
                         self.H[i, :] = np.linalg.solve(xtx, sums[i - indexblock, :] + self.rho * (
-                                    self.Z[i, :] - self.U[i, :]))
+                            self.Z[i, :] - self.U[i, :]))
+
     def updateZ(self):
         xtx = np.dot(self.H.transpose(), self.H) * 2 + self.rho * np.eye(self.dim)
         for blocki in range(self.splitnum):  # Split nodes into different Blocks
@@ -121,31 +124,31 @@ class AANE:
                     if np.any(nzidx):
                         normi_j = (self.lambd * self.Net[i][nzidx]) / normi_j[nzidx]
                         self.Z[i, :] = np.linalg.solve(xtx + normi_j.sum() * np.eye(self.dim), sums[i - indexblock, :] + (
-                                    neighbor[nzidx, :] * normi_j.reshape((-1, 1))).sum(0) + self.rho * (
-                                                                   self.H[i, :] + self.U[i, :]))
+                            neighbor[nzidx, :] * normi_j.reshape((-1, 1))).sum(0) + self.rho * (
+                            self.H[i, :] + self.U[i, :]))
                     else:
                         self.Z[i, :] = np.linalg.solve(xtx, sums[i - indexblock, :] + self.rho * (
-                                    self.H[i, :] + self.U[i, :]))
+                            self.H[i, :] + self.U[i, :]))
 
     def function(self):
         self.updateH()
         '''################# Iterations #################'''
         for i in range(self.maxiter):
             import time
-            t1=time.time()
+            t1 = time.time()
             self.updateZ()
             self.U = self.U + self.H - self.Z
             self.updateH()
-            t2=time.time()
+            t2 = time.time()
             print(f'iter: {i+1}/{self.maxiter}; time cost {t2-t1:0.2f}s')
 
-        #-------save emb to self.vectors and return
+        # -------save emb to self.vectors and return
         ind = 0
         for id in self.look_back_list:
             self.vectors[id] = self.H[ind]
             ind += 1
         return self.vectors
-    
+
     def save_embeddings(self, filename):
         '''
         save embeddings to file
@@ -154,5 +157,5 @@ class AANE:
         node_num = len(self.vectors.keys())
         fout.write("{} {}\n".format(node_num, self.dim))
         for node, vec in self.vectors.items():
-            fout.write("{} {}\n".format(node,' '.join([str(x) for x in vec])))
+            fout.write("{} {}\n".format(node, ' '.join([str(x) for x in vec])))
         fout.close()
