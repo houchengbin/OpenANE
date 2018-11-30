@@ -1,26 +1,18 @@
-# -*- coding: utf-8 -*-
-from __future__ import print_function
+"""
+downstream tasks; each task is a class;
+by Chengbin Hou & Zeyu Dong
+"""
 
 import math
 import random
-import warnings
 
 import numpy as np
 from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer
 
-warnings.filterwarnings(action='ignore', category=UserWarning, module='sklearn')
 
-'''
-#-----------------------------------------------------------------------------
-# by Chengbin Hou 2018
-# Email: Chengbin.Hou10@foxmail.com
-#-----------------------------------------------------------------------------
-'''
-
-# node classification classifier
-
+# ------------------node classification task---------------------------
 
 class ncClassifier(object):
 
@@ -68,8 +60,6 @@ class ncClassifier(object):
             results[average] = f1_score(Y, Y_, average=average)
         print(results)
         return results
-
-
 class TopKRanker(OneVsRestClassifier):  # orignal LR or SVM is for binary clf
     def predict(self, X, top_k_list):  # re-define predict func of OneVsRestClassifier
         probs = np.asarray(super(TopKRanker, self).predict_proba(X))
@@ -84,7 +74,7 @@ class TopKRanker(OneVsRestClassifier):  # orignal LR or SVM is for binary clf
         return np.asarray(all_labels)
 
 
-# link prediction binary classifier
+# ------------------link prediction task---------------------------
 class lpClassifier(object):
 
     def __init__(self, vectors):
@@ -110,13 +100,11 @@ class lpClassifier(object):
             roc = 1.0 - roc  # since lp is binary clf task, just predict the opposite if<0.5
         print("roc=", "{:.9f}".format(roc))
 
-
 def norm(a):
     sum = 0.0
     for i in range(len(a)):
         sum = sum + a[i] * a[i]
     return math.sqrt(sum)
-
 
 def cosine_similarity(a, b):
     sum = 0.0
@@ -124,7 +112,7 @@ def cosine_similarity(a, b):
         sum = sum + a[i] * b[i]
     return sum / (norm(a) * norm(b) + 1e-100)
 
-
+'''
 def lp_train_test_split(graph, ratio=0.8, neg_pos_link_ratio=1.0):
     # randomly split links/edges into training set and testing set
     # *** note: we do not assume every node must be connected after removing links
@@ -166,3 +154,4 @@ def lp_train_test_split(graph, ratio=0.8, neg_pos_link_ratio=1.0):
     print("# training links {0}; # positive testing links {1}; # negative testing links {2},".format(
         g.numDiEdges(), len(test_pos_sample), len(test_neg_sample)))
     return g.G, test_edge_pair, test_edge_label
+'''

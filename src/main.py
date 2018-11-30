@@ -7,28 +7,28 @@ STEP4: downstream evaluations
 
 python src/main.py --method abrw
 
-by Chengbin Hou 2018 <chengbin.hou10@foxmail.com>
+by Chengbin HOU 2018 <chengbin.hou10@foxmail.com>
 '''
 
 import time
 # import random
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
+from libnrl import abrw  # ANE method; Attributed Biased Random Walk
 from libnrl import aane  # ANE method
+from libnrl import tadw  # ANE method
 from libnrl import asne  # ANE method
+from libnrl.graphsage import graphsageAPI  # ANE method
 from libnrl import attrcomb  # ANE method
 from libnrl import attrpure  # NE method simply use svd or pca for dim reduction
 from libnrl import line  # PNE method
-from libnrl import tadw  # ANE method
-from libnrl.downstream import lpClassifier, ncClassifier
+from libnrl import grarep  # PNE method
+from libnrl import node2vec  # PNE method; including deepwalk and node2vec
 from libnrl.graph import Graph
-from libnrl.graphsage import graphsageAPI  # ANE method
-from libnrl.grarep import GraRep  # PNE method
+from libnrl.downstream import lpClassifier, ncClassifier
 from libnrl.utils import generate_edges_for_linkpred, read_node_label_downstream
 
-from sklearn.linear_model import LogisticRegression  # to do... 1) put it in downstream.py; and 2) try SVM...
-from libnrl import abrw  # ANE method; Attributed Biased Random Walk
-from libnrl import node2vec  # PNE method; including deepwalk and node2vec
+from sklearn.linear_model import LogisticRegression  # to do... try SVM...
 
 
 def parse_args():
@@ -175,17 +175,16 @@ def main(args):
         model = node2vec.Node2vec(graph=g, path_length=args.walk_length, num_paths=args.number_walks, dim=args.dim,
                                   workers=args.workers, window=args.window_size, p=args.Node2Vec_p, q=args.Node2Vec_q)
     elif args.method == 'grarep':
-        model = GraRep(graph=g, Kstep=args.GraRep_kstep, dim=args.dim)
+        model = grarep.GraRep(graph=g, Kstep=args.GraRep_kstep, dim=args.dim)
     elif args.method == 'line':  # if auto_save, use label to justifiy the best embeddings by looking at micro / macro-F1 score
         model = line.LINE(graph=g, epoch=args.epochs, rep_size=args.dim, order=args.LINE_order, batch_size=args.batch_size, negative_ratio=args.LINE_negative_ratio,
                           label_file=args.label_file, clf_ratio=args.label_reserved, auto_save=True, best='micro')
-
+    elif args.method == 'asne':
+        model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, learning_rate=args.learning_rate, batch_size=args.batch_size, epoch=args.epochs, n_neg_samples=10)
     elif args.method == 'sagemean':  # other choices: graphsage_seq, graphsage_maxpool, graphsage_meanpool, n2v
         model = graphsageAPI.graphSAGE(graph=g, sage_model='mean', is_supervised=False)
     elif args.method == 'sagegcn':  # parameters for graphsage models are in 'graphsage' -> '__init__.py'
         model = graphsageAPI.graphSAGE(graph=g, sage_model='gcn', is_supervised=False)
-    elif args.method == 'asne':
-        model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, learning_rate=args.learning_rate, batch_size=args.batch_size, epoch=args.epochs, n_neg_samples=10)
     else:
         print('method not found...')
         exit(0)
@@ -193,9 +192,9 @@ def main(args):
     print(f'STEP3: end learning embeddings; time cost: {(t2-t1):.2f}s')
 
     if args.save_emb:
-        model.save_embeddings(args.emb_file + time.strftime(' %Y%m%d-%H%M%S', time.localtime()))
+        #model.save_embeddings(args.emb_file + time.strftime(' %Y%m%d-%H%M%S', time.localtime()))
+        model.save_embeddings(args.emb_file)
         print(f'Save node embeddings in file: {args.emb_file}')
-
 
     # ---------------------------------------STEP4: downstream task-----------------------------------------------
     print('\nSTEP4: start evaluating ......: ')
@@ -205,14 +204,14 @@ def main(args):
     # ------lp task
     if args.task == 'lp' or args.task == 'lp_and_nc':
         print(f'Link Prediction task; the percentage of positive links for testing: {(args.link_remove*100):.2f}%' + ' (by default, also generate equal negative links for testing)')
-        clf = lpClassifier(vectors=vectors)  # similarity/distance metric as clf; basically, lp is a binary clf probelm
-        clf.evaluate(test_node_pairs, test_edge_labels)
+        ds_task = lpClassifier(vectors=vectors)  # similarity/distance metric as clf; basically, lp is a binary clf probelm
+        ds_task.evaluate(test_node_pairs, test_edge_labels)
     # ------nc task
     if args.task == 'nc' or args.task == 'lp_and_nc':
         X, Y = read_node_label_downstream(args.label_file)
         print(f'Node Classification task; the percentage of labels for testing: {((1-args.label_reserved)*100):.2f}%')
-        clf = ncClassifier(vectors=vectors, clf=LogisticRegression())  # use Logistic Regression as clf; we may choose SVM or more advanced ones
-        clf.split_train_evaluate(X, Y, args.label_reserved)
+        ds_task = ncClassifier(vectors=vectors, clf=LogisticRegression())  # use Logistic Regression as clf; we may choose SVM or more advanced ones
+        ds_task.split_train_evaluate(X, Y, args.label_reserved)
     t2 = time.time()
     print(f'STEP4: end evaluating; time cost: {(t2-t1):.2f}s')
 

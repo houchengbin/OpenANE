@@ -1,19 +1,15 @@
-# -*- coding: utf-8 -*-
+"""
+commonly used ulits
+by Chengbin Hou & Zeyu Dong
+"""
+
 import time
 
 import numpy as np
 from scipy import sparse
 
 
-'''
-#-----------------------------------------------------------------------------
-# Chengbin Hou @ SUSTech 2018
-# Email: Chengbin.Hou10@foxmail.com
-#-----------------------------------------------------------------------------
-'''
-
 # ---------------------------------ulits for calculation--------------------------------
-
 
 def row_as_probdist(mat, dense_output=False, preserve_zeros=False):
     """Make each row of matrix sums up to 1.0, i.e., a probability distribution.
@@ -72,8 +68,8 @@ def pairwise_similarity(mat, type='cosine'):
         return 'Not found!'
     return result
 
-# ---------------------------------ulits for downstream tasks--------------------------------
 
+# ---------------------------------ulits for downstream tasks--------------------------------
 
 def read_edge_label_downstream(filename):
     fin = open(filename, 'r')
@@ -132,6 +128,8 @@ def generate_edges_for_linkpred(graph, edges_removed, balance_ratio=1.0):
     test_edge_labels = list(np.ones(num_edges_removed)) + list(np.zeros(num_non_edges))
     return test_node_pairs, test_edge_labels
 
+
+# ---------------------------------others--------------------------------
 
 def dim_reduction(mat, dim=128, method='pca'):
     ''' dimensionality reduction: PCA, SVD, etc...
