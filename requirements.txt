@@ -1,5 +1,4 @@
 # tested in python==3.6.6
-
 numpy==1.14.5
 tensorflow==1.10.0 # to do... compatible with latest tf and tf-gpu
 tensorboard==1.10.0
@@ -8,11 +7,11 @@ gensim==3.0.1
 scikit-learn==0.19.0 # to do... compatible with >0.20
 pandas==0.23.0
 
-# want to use GPU? some useful info:
+# Enable GPU:
+# If using anaconda, run `conda install tensorflow-gpu==1.10.0`
 
-# either -> conda install tensorflow-gpu==1.10.0  #this version will help you to install cuda and cudnn
-# for cuda driver compatibility: https://docs.nvidia.com/deploy/cuda-compatibility/index.html
-# e.g. if driver 384.xx -> conda install tensorflow-gpu=1.10.0 cudatoolkit=9.0
+# For cuda driver compatibility: https://docs.nvidia.com/deploy/cuda-compatibility/index.html
+# For example, if driver version is 384.xx then also install cudatoolkit==9.0
 
-# or     -> simply build from docker image: docker pull tensorflow/tensorflow:1.10.0-gpu-py3
+# Or simply build from docker image: docker pull tensorflow/tensorflow:1.10.0-gpu-py3
 # ref: https://www.tensorflow.org/install/docker#gpu_support
