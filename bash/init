@@ -1,0 +1,19 @@
+#!/bin/bash
+DIR=$(dirname "${BASH_SOURCE[0]}")
+
+datasets="SN_gender citeseer cora dblp mit nyu pubmed stanford uIllinois"
+methods="deepwalk node2vec line grarep abrw attrpure attrcomb tadw aane sagemean sagegcn asne"
+
+for dataset in $datasets; do
+    echo cd \`dirname \"\${BASH_SOURCE[0]}\"\`/.. > $DIR/$dataset.sh
+    for method in $methods; do
+        echo python -u src/main.py --method $method --graph-file data/$dataset/${dataset}_adjlist.txt --attribute-file data/$dataset/${dataset}_attr.txt --label-file data/$dataset/${dataset}_label.txt --emb-file emb/${dataset}_${method}_emb --save-emb 2\>\&1 \| tee log/$dataset-$method-\`date +%Y%m%d-%H%M%S\`.log >> $DIR/$dataset.sh
+    done
+done
+
+echo DIR=\$\(dirname \"\${BASH_SOURCE[0]}\"\) > $DIR/runall.sh
+for dataset in $datasets; do
+    echo bash \$DIR/${dataset}.sh >> $DIR/runall.sh
+done
+
+chmod a+x $DIR/*.sh
