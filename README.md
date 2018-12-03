@@ -33,7 +33,7 @@ AttrComb
 ```bash
 pip install -r requirements.txt
 ```
-Python 3.6.6 or above is required due to the new [*print(f' ')*](https://docs.python.org/3.6/reference/lexical_analysis.html#f-strings) feature
+Python 3.6.6 or above is required due to the new [`print(f' ')`](https://docs.python.org/3.6/reference/lexical_analysis.html#f-strings) feature
 #### To obtain node embeddings as well as evaluate the quality
 ```bash
 python src/main.py --method abrw --task lp_and_nc --emb-file emb/cora_abrw_emb --save-emb
@@ -59,18 +59,18 @@ STEPS: Cora -> NE method -> node embeddings -> (downstream) LP/NC -> scores
 
 | Method   | AUC (LP)   | Micro-F1 (NC) | Macro-F1 (NC) |
 |----------|--------|----------|----------|
-| aane     | 0.8158 | 0.7263   | 0.6904   |
-| abrw     | 0.9290 | 0.8721   | 0.8603   |
-| asne     | 0.7842 | 0.6076   | 0.5649   |
-| attrcomb | 0.9111 | 0.8444   | 0.8284   |
-| attrpure | 0.7857 | 0.7349   | 0.7039   |
-| deepwalk | 0.8499 | 0.8100   | 0.8021   |
-| grarep   | 0.8936 | 0.7669   | 0.7607   |
-| line     | 0.6945 | 0.5873   | 0.5645   |
-| node2vec | 0.7938 | 0.7977   | 0.7858   |
-| sagegcn  | 0.8929 | 0.7780   | 0.7622   |
-| sagemean | 0.8882 | 0.8057   | 0.7902   |
-| tadw     | 0.9005 | 0.8383   | 0.8255   |
+| aane     | 0.8081 | 0.7296   | 0.6941   |
+| abrw     | 0.9376 | 0.8612   | 0.8523   |
+| asne     | 0.7728 | 0.6052   | 0.5656   |
+| attrcomb | 0.9053 | 0.8446   | 0.8318   |
+| attrpure | 0.7993 | 0.7368   | 0.7082   |
+| deepwalk | 0.8465 | 0.8147   | 0.8048   |
+| grarep   | 0.8935 | 0.7632   | 0.7529   |
+| line     | 0.6930 | 0.6130   | 0.5949   |
+| node2vec | 0.7935 | 0.7938   | 0.7856   |
+| sagegcn  | 0.8926 | 0.7964   | 0.7828   |
+| sagemean | 0.8948 | 0.7899   | 0.7748   |
+| tadw     | 0.8877 | 0.8442   | 0.8321   |
 
 #### 2D Visualization task:
 STEPS: Cora -> NE method -> node embeddings -> (downstream) PCA to 2D -> vis
