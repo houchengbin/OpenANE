@@ -2,7 +2,7 @@
 We reproduce several ANE (Attributed Network Embedding) methods as well as PNE (Pure Network Embedding) methods in **one unified framework**, where they all share the same I/O, downstream tasks, etc. We start this project based on [OpenNE](https://github.com/thunlp/OpenNE) which mainly integrates PNE methods in one unified framework. 
 <br> OpenANE not only integrates those PNE methods that consider pure structural information, but also provides the state-of-the-art ANE methods that consider both structural and attribute information during embedding.
 
-Authors: Chengbin HOU chengbin.hou10@foxmail.com & Zeyu DONG 11611716@mail.sustc.edu.cn 2018
+Authors: Chengbin HOU chengbin.hou10@foxmail.com & Zeyu DONG zeyu.dong@foxmail.com 2018
 
 
 ## Motivation
