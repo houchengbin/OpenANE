@@ -1,4 +1,10 @@
-#chengbin--------------------------
+# My configurations:
+db.ini
+deploy_key_rsa
+log
+bash
+emb
+
 # Windows:
 Thumbs.db
 ehthumbs.db
@@ -13,15 +19,6 @@ dist
 build
 __pycache__
 
-# My configurations:
-db.ini
-deploy_key_rsa
-log
-bash
-emb
-
-
-#zeyu--------------------------------
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
