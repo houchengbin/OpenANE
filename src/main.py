@@ -11,24 +11,13 @@ by Chengbin HOU 2018 <chengbin.hou10@foxmail.com>
 '''
 
 import time
-# import random
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
-from libnrl import abrw  # ANE method; Attributed Biased Random Walk
-from libnrl import aane  # ANE method
-from libnrl import tadw  # ANE method
-from libnrl import asne  # ANE method
-from libnrl.graphsage import graphsageAPI  # ANE method
-from libnrl import attrcomb  # ANE method
-from libnrl import attrpure  # NE method simply use svd or pca for dim reduction
-from libnrl import line  # PNE method
-from libnrl import grarep  # PNE method
-from libnrl import node2vec  # PNE method; including deepwalk and node2vec
-from libnrl.graph import Graph
-from libnrl.downstream import lpClassifier, ncClassifier
-from libnrl.utils import generate_edges_for_linkpred, read_node_label_downstream
-
 from sklearn.linear_model import LogisticRegression  # to do... try SVM...
+
+from libnrl.downstream import lpClassifier, ncClassifier
+from libnrl.graph import Graph
+from libnrl.utils import generate_edges_for_linkpred, read_node_label_downstream
 
 
 def parse_args():
@@ -156,34 +145,46 @@ def main(args):
     t1 = time.time()
     model = None
     if args.method == 'abrw':
+        from libnrl import abrw  # ANE method; Attributed Biased Random Walk
         model = abrw.ABRW(graph=g, dim=args.dim, alpha=args.ABRW_alpha, topk=args.ABRW_topk, number_walks=args.number_walks,
                           walk_length=args.walk_length, window=args.window_size, workers=args.workers)
     elif args.method == 'aane':
+        from libnrl import aane  # ANE method
         model = aane.AANE(graph=g, dim=args.dim, lambd=args.AANE_lamb, rho=args.AANE_rho, maxiter=args.AANE_maxiter,
                           mode='comb')  # mode: 'comb' struc and attri or 'pure' struc
     elif args.method == 'tadw':
+        from libnrl import tadw  # ANE method
         model = tadw.TADW(graph=g, dim=args.dim, lamb=args.TADW_lamb, maxiter=args.TADW_maxiter)
     elif args.method == 'attrpure':
+        from libnrl import attrpure  # NE method simply use svd or pca for dim reduction
         model = attrpure.ATTRPURE(graph=g, dim=args.dim, mode='pca')  # mode: pca or svd
     elif args.method == 'attrcomb':
+        from libnrl import attrcomb  # ANE method
         model = attrcomb.ATTRCOMB(graph=g, dim=args.dim, comb_with='deepwalk', number_walks=args.number_walks, walk_length=args.walk_length,
                                   window=args.window_size, workers=args.workers, comb_method=args.AttrComb_mode)  # comb_method: concat, elementwise-mean, elementwise-max
     elif args.method == 'deepwalk':
+        from libnrl import node2vec  # PNE method; including deepwalk and node2vec
         model = node2vec.Node2vec(graph=g, path_length=args.walk_length, num_paths=args.number_walks, dim=args.dim,
                                   workers=args.workers, window=args.window_size, dw=True)
     elif args.method == 'node2vec':
+        from libnrl import node2vec  # PNE method; including deepwalk and node2vec
         model = node2vec.Node2vec(graph=g, path_length=args.walk_length, num_paths=args.number_walks, dim=args.dim,
                                   workers=args.workers, window=args.window_size, p=args.Node2Vec_p, q=args.Node2Vec_q)
     elif args.method == 'grarep':
+        from libnrl import grarep  # PNE method
         model = grarep.GraRep(graph=g, Kstep=args.GraRep_kstep, dim=args.dim)
     elif args.method == 'line':  # if auto_save, use label to justifiy the best embeddings by looking at micro / macro-F1 score
+        from libnrl import line  # PNE method
         model = line.LINE(graph=g, epoch=args.epochs, rep_size=args.dim, order=args.LINE_order, batch_size=args.batch_size, negative_ratio=args.LINE_negative_ratio,
                           label_file=args.label_file, clf_ratio=args.label_reserved, auto_save=True, best='micro')
     elif args.method == 'asne':
+        from libnrl import asne  # ANE method
         model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, learning_rate=args.learning_rate, batch_size=args.batch_size, epoch=args.epochs, n_neg_samples=10)
     elif args.method == 'sagemean':  # other choices: graphsage_seq, graphsage_maxpool, graphsage_meanpool, n2v
+        from libnrl.graphsage import graphsageAPI  # ANE method
         model = graphsageAPI.graphSAGE(graph=g, sage_model='mean', is_supervised=False)
     elif args.method == 'sagegcn':  # parameters for graphsage models are in 'graphsage' -> '__init__.py'
+        from libnrl.graphsage import graphsageAPI  # ANE method
         model = graphsageAPI.graphSAGE(graph=g, sage_model='gcn', is_supervised=False)
     else:
         print('method not found...')
