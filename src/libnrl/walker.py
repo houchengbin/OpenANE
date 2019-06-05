@@ -8,6 +8,8 @@ by Chengbin Hou & Zeyu Dong 2018
 
 import random
 import time
+import multiprocessing
+from itertools import chain
 
 import numpy as np
 from networkx import nx
@@ -26,30 +28,40 @@ class WeightedWalker:
 
     # alias sampling for ABRW-------------------------
     def simulate_walks(self, num_walks, walk_length):
+        self.walk_length = walk_length
+        self.num_walks = num_walks
+        self.nodes = list(self.rec_G.nodes())
+        all_walks = None
+
         t1 = time.time()
         self.preprocess_transition_probs(weighted_G=self.rec_G)  # construct alias table; adapted from node2vec
         t2 = time.time()
         print(f'Time for construct alias table: {(t2-t1):.2f}')
 
+        pool = multiprocessing.Pool(processes=self.workers)
+        all_walks = pool.map(self.mp_rw_wrapper, range(self.num_walks))
+        all_walks = list(chain(*all_walks))
+        t3 = time.time()
+        print(f'Time for all random walks: {(t3-t2):.2f}')  # use multiple cores, total time < sum(time@itr)
+        
+        for i in range(len(all_walks)):  # use ind to retrive original node ID
+            for j in range(len(all_walks[0])):
+                all_walks[i][j] = self.look_back_list[int(all_walks[i][j])]
+        return all_walks
+
+    def mp_rw_wrapper(self, walk_iter):
         walks = []
-        nodes = list(self.rec_G.nodes())
-        for walk_iter in range(num_walks):
-            t1 = time.time()
-            random.shuffle(nodes)
-            for node in nodes:
-                walks.append(self.weighted_walk(weighted_G=self.rec_G, walk_length=walk_length, start_node=node))
-            t2 = time.time()
-            print(f'Walk iteration: {walk_iter+1}/{num_walks}; time cost: {(t2-t1):.2f}')
-
-        for i in range(len(walks)):  # use ind to retrive original node ID
-            for j in range(len(walks[0])):
-                walks[i][j] = self.look_back_list[int(walks[i][j])]
+        t1 = time.time()
+        for node in self.nodes:
+            walks.append(self.weighted_walk(start_node=node))
+        t2 = time.time()
+        print(f'Walk iteration: {walk_iter+1}/{self.num_walks}; time cost: {(t2-t1):.2f}')
         return walks
-
-    def weighted_walk(self, weighted_G, walk_length, start_node):  # more efficient way instead of copy from node2vec
-        G = weighted_G
+        
+    def weighted_walk(self, start_node):  # more efficient way instead of copy from node2vec
+        G = self.rec_G
         walk = [start_node]
-        while len(walk) < walk_length:
+        while len(walk) < self.walk_length:
             cur = walk[-1]
             cur_nbrs = list(G.neighbors(cur))
             if len(cur_nbrs) > 0:  # if non-isolated node
@@ -70,19 +82,18 @@ class WeightedWalker:
         self.alias_nodes = alias_nodes  # where array1 gives alias node indexes; array2 gives its prob
 
 
+# ===========================================deepWalk-walker============================================
 def deepwalk_walk_wrapper(class_instance, walk_length, start_node):
     class_instance.deepwalk_walk(walk_length, start_node)
-
-# ===========================================deepWalk-walker============================================
-
 
 class BasicWalker:
     def __init__(self, g, workers):
         self.g = g
         self.node_size = g.get_num_nodes()
         self.look_up_dict = g.look_up_dict
+        self.workers = workers
 
-    def deepwalk_walk(self, walk_length, start_node):
+    def deepwalk_walk(self, start_node):
         '''
         Simulate a random walk starting from start node.
         '''
@@ -90,7 +101,7 @@ class BasicWalker:
 
         walk = [start_node]
 
-        while len(walk) < walk_length:
+        while len(walk) < self.walk_length:
             cur = walk[-1]
             cur_nbrs = list(G.neighbors(cur))
             if len(cur_nbrs) > 0:
@@ -99,21 +110,32 @@ class BasicWalker:
                 break
         return walk
 
+    def mp_rw_wrapper(self, walk_iter):
+        walks = []
+        t1 = time.time()
+        for node in self.nodes:
+            walks.append(self.deepwalk_walk(start_node=node))
+        t2 = time.time()
+        print(f'Walk iteration: {walk_iter+1}/{self.num_walks}; time cost: {(t2-t1):.2f}')
+        return walks    
+
+
     def simulate_walks(self, num_walks, walk_length):
         '''
         Repeatedly simulate random walks from each node.
         '''
-        G = self.g.G
-        walks = []
-        nodes = list(G.nodes())
-        for walk_iter in range(num_walks):
-            t1 = time.time()
-            random.shuffle(nodes)
-            for node in nodes:
-                walks.append(self.deepwalk_walk(walk_length=walk_length, start_node=node))
-            t2 = time.time()
-            print(f'Walk iteration: {walk_iter+1}/{num_walks}; time cost: {(t2-t1):.2f}')
-        return walks
+        self.walk_length = walk_length
+        self.num_walks = num_walks
+        self.nodes = list(self.g.G.nodes())
+        all_walks = None
+
+        t1 = time.time()
+        pool = multiprocessing.Pool(processes=self.workers)
+        all_walks = pool.map(self.mp_rw_wrapper, range(self.num_walks))
+        all_walks = list(chain(*all_walks))
+        t2 = time.time()
+        print(f'Time for all random walks: {(t2-t1):.2f}')  # use multiple cores, total time < sum(time@itr)
+        return all_walks
 
 
 # ===========================================node2vec-walker============================================
@@ -122,6 +144,7 @@ class Walker:
         self.g = g
         self.p = p
         self.q = q
+        self.workers = workers
 
         if self.g.get_isweighted():
             # print('is weighted graph: ', self.g.get_isweighted())
@@ -133,17 +156,15 @@ class Walker:
         self.node_size = g.get_num_nodes()
         self.look_up_dict = g.look_up_dict
 
-    def node2vec_walk(self, walk_length, start_node):
+    def node2vec_walk(self, start_node):
         '''
         Simulate a random walk starting from start node.
         '''
         G = self.g.G
         alias_nodes = self.alias_nodes
         alias_edges = self.alias_edges
-
         walk = [start_node]
-
-        while len(walk) < walk_length:
+        while len(walk) < self.walk_length:
             cur = walk[-1]
             cur_nbrs = list(G.neighbors(cur))
             if len(cur_nbrs) > 0:
@@ -157,21 +178,31 @@ class Walker:
                 break
         return walk
 
+    def mp_rw_wrapper(self, walk_iter):
+        walks = []
+        t1 = time.time()
+        for node in self.nodes:
+            walks.append(self.node2vec_walk(start_node=node))
+        t2 = time.time()
+        print(f'Walk iteration: {walk_iter+1}/{self.num_walks}; time cost: {(t2-t1):.2f}')
+        return walks
+
     def simulate_walks(self, num_walks, walk_length):
         '''
         Repeatedly simulate random walks from each node.
         '''
-        G = self.g.G
-        walks = []
-        nodes = list(G.nodes())
-        for walk_iter in range(num_walks):
-            t1 = time.time()
-            random.shuffle(nodes)
-            for node in nodes:
-                walks.append(self.node2vec_walk(walk_length=walk_length, start_node=node))
-            t2 = time.time()
-            print(f'Walk iteration: {walk_iter+1}/{num_walks}; time cost: {(t2-t1):.2f}')
-        return walks
+        self.walk_length = walk_length
+        self.num_walks = num_walks
+        self.nodes = list(self.g.G.nodes())
+        all_walks = None
+
+        t1 = time.time()
+        pool = multiprocessing.Pool(processes=self.workers)
+        all_walks = pool.map(self.mp_rw_wrapper, range(self.num_walks))
+        all_walks = list(chain(*all_walks))
+        t2 = time.time()
+        print(f'Time for all random walks: {(t2-t1):.2f}')  # use multiple cores, total time < sum(time@itr)
+        return all_walks
 
     def get_alias_edge(self, src, dst):
         '''
@@ -217,6 +248,9 @@ class Walker:
 
         self.alias_nodes = alias_nodes
         self.alias_edges = alias_edges
+
+
+
 
 
 # ========================================= utils: alias sampling method ====================================================
