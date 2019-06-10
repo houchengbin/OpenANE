@@ -27,13 +27,13 @@ PNE methods:
 [others](https://github.com/thunlp/OpenNE)
 <br> All methods in this framework are **unsupervised**, and so do not require any label during embedding phase.
 
-For more details of each method, please have a look at our paper https://arxiv.org/abs/1811.11728. And if you find ABRW or this framework is useful for your research, please consider citing it.
+For more details of each method, please have a look at our paper https://arxiv.org/abs/1811.11728v2. And if you find ABRW or this framework is useful for your research, please consider citing it.
 ```
-@article{hou2018abrw,
-  title={Attributed Network Embedding for Incomplete Structure Information},
+@article{hou2019abrw,
+  title={Attributed Network Embedding for Incomplete Attributed Networks},
   author={Hou, Chengbin and He, Shan and Tang, Ke},
-  journal={arXiv preprint arXiv:1811.11728},
-  year={2018}
+  journal={arXiv preprint arXiv:1811.11728v2},
+  year={2019}
 }
 ```
 
