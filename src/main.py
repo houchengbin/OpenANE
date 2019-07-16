@@ -11,6 +11,7 @@ by Chengbin HOU 2018 <chengbin.hou10@foxmail.com>
 '''
 
 import time
+import random
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 
 from sklearn.linear_model import LogisticRegression  # to do... try SVM...
@@ -35,9 +36,9 @@ def parse_args():
                         help='node embeddings dimensions')
     parser.add_argument('--task', default='lp_and_nc', choices=['none', 'lp', 'nc', 'lp_and_nc'],
                         help='choices of downstream tasks: none, lp, nc, lp_and_nc')
-    parser.add_argument('--link-remove', default=0.1, type=float,
+    parser.add_argument('--link-remove', default=0.2, type=float,
                         help='simulate randomly missing links if necessary; a ratio ranging [0.0, 1.0]')
-    parser.add_argument('--label-reserved', default=0.7, type=float,
+    parser.add_argument('--label-reserved', default=0.5, type=float,
                         help='for nc task, train/test split, a ratio ranging [0.0, 1.0]')
     parser.add_argument('--directed', default=False, action='store_true',
                         help='directed or undirected graph')
@@ -54,8 +55,12 @@ def parse_args():
                         help='choices of Network Embedding methods')
     parser.add_argument('--ABRW-topk', default=30, type=int,
                         help='select the most attr similar top k nodes of a node; ranging [0, # of nodes]')
-    parser.add_argument('--ABRW-alpha', default=0.8, type=float,
-                        help='balance struc and attr info; ranging [0, 1]')
+    parser.add_argument('--ABRW-alpha', default=2.71828, type=float,
+                        help='control the shape of characteristic curve of adaptive beta, ranging [0, inf]')
+    parser.add_argument('--ABRW-beta-mode', default=1, type=int,
+                        help='1: fixed; 2: adaptive based on average degree; 3: adaptive based on each node degree')
+    parser.add_argument('--ABRW-beta', default=0.2, type=float,
+                        help='balance struc and attr info; ranging [0, 1]; disabled if beta-mode 2 or 3')
     parser.add_argument('--AANE-lamb', default=0.05, type=float,
                         help='balance struc and attr info; ranging [0, inf]')
     parser.add_argument('--AANE-rho', default=5, type=float,
@@ -64,16 +69,16 @@ def parse_args():
                         help='max iter')
     parser.add_argument('--TADW-lamb', default=0.2, type=float,
                         help='balance struc and attr info; ranging [0, inf]')
-    parser.add_argument('--TADW-maxiter', default=10, type=int,
+    parser.add_argument('--TADW-maxiter', default=20, type=int,
                         help='max iter')
     parser.add_argument('--ASNE-lamb', default=1.0, type=float,
                         help='balance struc and attr info; ranging [0, inf]')
     parser.add_argument('--AttrComb-mode', default='concat', type=str,
                         help='choices of mode: concat, elementwise-mean, elementwise-max')
     parser.add_argument('--Node2Vec-p', default=0.5, type=float,  # if p=q=1.0 node2vec = deepwalk
-                        help='trade-off BFS and DFS; rid search [0.25; 0.50; 1; 2; 4]')
+                        help='trade-off BFS and DFS; grid search [0.25; 0.50; 1; 2; 4]')
     parser.add_argument('--Node2Vec-q', default=0.5, type=float,
-                        help='trade-off BFS and DFS; rid search [0.25; 0.50; 1; 2; 4]')
+                        help='trade-off BFS and DFS; grid search [0.25; 0.50; 1; 2; 4]')
     parser.add_argument('--GraRep-kstep', default=4, type=int,
                         help='use k-step transition probability matrix, error if dim%Kstep!=0')
     parser.add_argument('--LINE-order', default=3, type=int,
@@ -87,10 +92,10 @@ def parse_args():
                         help='length of each random walk')
     parser.add_argument('--window-size', default=10, type=int,
                         help='window size of skipgram model')
-    parser.add_argument('--workers', default=24, type=int,
+    parser.add_argument('--workers', default=36, type=int,
                         help='# of parallel processes.')
     # for deep learning based methods; parameters about layers and neurons used are not specified here
-    parser.add_argument('--learning-rate', default=0.001, type=float,
+    parser.add_argument('--learning-rate', default=0.0001, type=float,
                         help='learning rate')
     parser.add_argument('--batch-size', default=128, type=int,
                         help='batch size')
@@ -98,8 +103,6 @@ def parse_args():
                         help='epochs')
     parser.add_argument('--dropout', default=0.5, type=float,
                         help='dropout rate (1 - keep probability)')
-    parser.add_argument('--weight-decay', type=float, default=0.0001,
-                        help='weight for L2 loss on embedding matrix')
     args = parser.parse_args()
     return args
 
@@ -111,12 +114,12 @@ def main(args):
     # ---------------------------------------STEP1: load data-----------------------------------------------------
     print('\nSTEP1: start loading data......')
     t1 = time.time()
-    # load graph structure info------
+    # load graph structure info; by defalt, treat as undirected and unweighted graph ------
     if args.graph_format == 'adjlist':
         g.read_adjlist(path=args.graph_file, directed=args.directed)
     elif args.graph_format == 'edgelist':
         g.read_edgelist(path=args.graph_file, weighted=args.weighted, directed=args.directed)
-    # load node attribute info------
+    # load node attribute info ------
     is_ane = (args.method == 'abrw' or args.method == 'tadw' or args.method == 'gcn' or args.method == 'sagemean' or args.method == 'sagegcn' or
               args.method == 'attrpure' or args.method == 'attrcomb' or args.method == 'asne' or args.method == 'aane')
     if is_ane:
@@ -133,6 +136,10 @@ def main(args):
     test_edge_labels = []
     if args.task == 'lp' or args.task == 'lp_and_nc':
         edges_removed = g.remove_edge(ratio=args.link_remove)
+        num_test_links = 0
+        limit_percentage = 0.2    # at most, use 0.2 randomly removed links for testing
+        num_test_links = int( min(len(edges_removed), len(edges_removed)/args.link_remove*limit_percentage) )
+        edges_removed = random.sample(edges_removed, num_test_links)
         test_node_pairs, test_edge_labels = generate_edges_for_linkpred(graph=g, edges_removed=edges_removed, balance_ratio=1.0)
     t2 = time.time()
     print(f'STEP2: end preparing data; time cost: {(t2-t1):.2f}s')
@@ -145,9 +152,9 @@ def main(args):
     t1 = time.time()
     model = None
     if args.method == 'abrw':
-        from libnrl import abrw  # ANE method; Attributed Biased Random Walk
-        model = abrw.ABRW(graph=g, dim=args.dim, alpha=args.ABRW_alpha, topk=args.ABRW_topk, number_walks=args.number_walks,
-                          walk_length=args.walk_length, window=args.window_size, workers=args.workers)
+        from libnrl import abrw  # ANE method; (Adaptive) Attributed Biased Random Walk
+        model = abrw.ABRW(graph=g, dim=args.dim, topk=args.ABRW_topk, beta=args.ABRW_beta, beta_mode=args.ABRW_beta_mode, alpha=args.ABRW_alpha, 
+                          number_walks=args.number_walks, walk_length=args.walk_length, window=args.window_size, workers=args.workers)
     elif args.method == 'aane':
         from libnrl import aane  # ANE method
         model = aane.AANE(graph=g, dim=args.dim, lambd=args.AANE_lamb, rho=args.AANE_rho, maxiter=args.AANE_maxiter,
@@ -180,10 +187,10 @@ def main(args):
     elif args.method == 'asne':
         from libnrl import asne  # ANE method
         model = asne.ASNE(graph=g, dim=args.dim, alpha=args.ASNE_lamb, learning_rate=args.learning_rate, batch_size=args.batch_size, epoch=args.epochs, n_neg_samples=10)
-    elif args.method == 'sagemean':  # other choices: graphsage_seq, graphsage_maxpool, graphsage_meanpool, n2v
+    elif args.method == 'sagemean':  # parameters for graphsage models are in 'graphsage' -> '__init__.py'
         from libnrl.graphsage import graphsageAPI  # ANE method
         model = graphsageAPI.graphSAGE(graph=g, sage_model='mean', is_supervised=False)
-    elif args.method == 'sagegcn':  # parameters for graphsage models are in 'graphsage' -> '__init__.py'
+    elif args.method == 'sagegcn':   # other choices: graphsage_seq, graphsage_maxpool, graphsage_meanpool, n2v
         from libnrl.graphsage import graphsageAPI  # ANE method
         model = graphsageAPI.graphSAGE(graph=g, sage_model='gcn', is_supervised=False)
     else:
@@ -204,7 +211,7 @@ def main(args):
     del model, g
     # ------lp task
     if args.task == 'lp' or args.task == 'lp_and_nc':
-        print(f'Link Prediction task; the percentage of positive links for testing: {(args.link_remove*100):.2f}%' + ' (by default, also generate equal negative links for testing)')
+        print(f'Link Prediction task; the number of testing links {len(test_edge_labels)} i.e. at most 2*0.2*all_positive_links)')
         ds_task = lpClassifier(vectors=vectors)  # similarity/distance metric as clf; basically, lp is a binary clf probelm
         ds_task.evaluate(test_node_pairs, test_edge_labels)
     # ------nc task

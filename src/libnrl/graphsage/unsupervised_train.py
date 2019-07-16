@@ -81,7 +81,7 @@ def construct_placeholders():
 
 def train(train_data, test_data, model):
     print('---------- the graphsage model we used: ', model)
-    print('---------- parameters we sued: epochs, dim_1+dim_2, samples_1, samples_2, dropout, weight_decay, learning_rate, batch_size',
+    print('---------- parameters we used: epochs, dim_1+dim_2, samples_1, samples_2, dropout, weight_decay, learning_rate, batch_size',
           epochs, dim_1+dim_2, samples_1, samples_2, dropout, weight_decay, learning_rate, batch_size)
     G = train_data[0]
     features = train_data[1]  # note: features are in order of graph.look_up_list, since id_map = {k: v for v, k in enumerate(graph.look_back_list)}

@@ -1,5 +1,5 @@
 """
-commonly used ulits
+commonly used utils
 by Chengbin Hou & Zeyu Dong
 """
 
@@ -11,7 +11,7 @@ from scipy import sparse
 
 # ---------------------------------ulits for calculation--------------------------------
 
-def row_as_probdist(mat, dense_output=False, preserve_zeros=False):
+def row_as_probdist(mat, dense_output=True, preserve_all_zero_row=False):
     """Make each row of matrix sums up to 1.0, i.e., a probability distribution.
     Support both dense and sparse matrix.
 
@@ -36,7 +36,8 @@ def row_as_probdist(mat, dense_output=False, preserve_zeros=False):
     row_sum[zero_rows] = 1
     diag = sparse.dia_matrix((1 / row_sum, 0), (mat.shape[0], mat.shape[0]))
     mat = diag.dot(mat)
-    if not preserve_zeros:
+    if not preserve_all_zero_row:
+        print('For all-zero row, replace each 0 with value 1/dim(row)... not preserving zero i.e. a strict transition matrix')
         mat += sparse.csr_matrix(zero_rows.astype(int)).T.dot(sparse.csr_matrix(np.repeat(1 / mat.shape[1], mat.shape[1])))
 
     if dense_output and sparse.issparse(mat):
@@ -44,7 +45,7 @@ def row_as_probdist(mat, dense_output=False, preserve_zeros=False):
     return mat
 
 
-def pairwise_similarity(mat, type='cosine'):
+def pairwise_similarity(mat, type='cosine'):   # for efficiency, plz given dense mat as the input
     if type == 'cosine':  # support sprase and dense mat
         from sklearn.metrics.pairwise import cosine_similarity
         result = cosine_similarity(mat, dense_output=True)

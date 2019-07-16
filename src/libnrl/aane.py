@@ -3,6 +3,17 @@ ANE method: Accelerated Attributed Network Embedding (AANE)
 
 modified by Chengbin Hou 2018
 
+note: We tried this method in a HPC via pbs, 
+      however, we don't know why it is particularly slow, even we observed multiple cores were used...
+      We then tried this method in a small individual linux server. It works well.
+      If you find the same problem, just try this method in other computers.
+      Usually, Cora dataset only requires 20s/iter using my PC with 4 cores. 
+
+      However, when we run AANE for the large-scale dataset e.g. dblp (~60k nodes) in a Linux server with 40 cores,
+      it cost over 8000 seconds for each iteration...
+      For the reason, please see author's comments in https://github.com/xhuang31/AANE_Python/issues/5
+      
+      
 originally from https://github.com/xhuang31/AANE_Python
 """
 
@@ -33,7 +44,7 @@ class AANE:
     $Revision: 1.0.2 $  $Date: 2018/02/19 00:00:00 $
     """
 
-    def __init__(self, graph, dim, lambd=0.05, rho=5, maxiter=5, mode='comb', *varargs):
+    def __init__(self, graph, dim, lambd=0.05, rho=5, maxiter=2, mode='comb', *varargs):
         self.dim = dim
         self.look_back_list = graph.look_back_list  # look back node id for Net and Attr
         self.lambd = lambd  # Initial regularization parameter

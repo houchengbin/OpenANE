@@ -20,10 +20,11 @@ class WeightedWalker:
     ''' Weighted Walker for Attributed Biased Randomw Walks (ABRW) method
     '''
 
-    def __init__(self, node_id_map, transition_mat, workers):
-        self.look_back_list = node_id_map
+    def __init__(self, node_id_map, transition_mat, workers, parallel_walks=10):  # recommend: parallel_walks = number_walks
+        self.look_back_list = node_id_map                                         # if memory error due to python multiprocessor module, plz reduce parallel_walks
         self.T = transition_mat
         self.workers = workers
+        self.parallel_walks = parallel_walks
         self.rec_G = nx.to_networkx_graph(self.T, create_using=nx.DiGraph())  # reconstructed "directed" "weighted" graph based on transition matrix
 
     # alias sampling for ABRW-------------------------
@@ -38,8 +39,10 @@ class WeightedWalker:
         t2 = time.time()
         print(f'Time for construct alias table: {(t2-t1):.2f}')
 
-        pool = multiprocessing.Pool(processes=self.workers)
+        pool = multiprocessing.Pool(processes=self.parallel_walks)
         all_walks = pool.map(self.mp_rw_wrapper, range(self.num_walks))
+        pool.close()  # Waiting for all subprocesses done..
+        pool.join()
         all_walks = list(chain(*all_walks))
         t3 = time.time()
         print(f'Time for all random walks: {(t3-t2):.2f}')  # use multiple cores, total time < sum(time@itr)
@@ -51,8 +54,12 @@ class WeightedWalker:
 
     def mp_rw_wrapper(self, walk_iter):
         walks = []
+        random.seed()                       # *** for multiprocessor version
+        np.random.seed()                    # *** do NOT remove these 'random' operation
+        nodes = list(self.nodes.copy())     # *** otherwise, each number_walks may give the same node sequences...
+        random.shuffle(nodes)               # *** which hence decrease performance
         t1 = time.time()
-        for node in self.nodes:
+        for node in nodes:
             walks.append(self.weighted_walk(start_node=node))
         t2 = time.time()
         print(f'Walk iteration: {walk_iter+1}/{self.num_walks}; time cost: {(t2-t1):.2f}')
@@ -87,11 +94,12 @@ def deepwalk_walk_wrapper(class_instance, walk_length, start_node):
     class_instance.deepwalk_walk(walk_length, start_node)
 
 class BasicWalker:
-    def __init__(self, g, workers):
+    def __init__(self, g, workers, parallel_walks=10): # recommend: parallel_walks = number_walks; if memory error, plz reduce it
         self.g = g
         self.node_size = g.get_num_nodes()
         self.look_up_dict = g.look_up_dict
         self.workers = workers
+        self.parallel_walks = parallel_walks
 
     def deepwalk_walk(self, start_node):
         '''
@@ -112,8 +120,12 @@ class BasicWalker:
 
     def mp_rw_wrapper(self, walk_iter):
         walks = []
+        random.seed()                       # *** for multiprocessor version
+        np.random.seed()                    # *** do NOT remove these 'random' operation
+        nodes = list(self.nodes.copy())     # *** otherwise, each number_walks may give the same node sequences...
+        random.shuffle(nodes)               # *** which hence decrease performance
         t1 = time.time()
-        for node in self.nodes:
+        for node in nodes:
             walks.append(self.deepwalk_walk(start_node=node))
         t2 = time.time()
         print(f'Walk iteration: {walk_iter+1}/{self.num_walks}; time cost: {(t2-t1):.2f}')
@@ -130,8 +142,10 @@ class BasicWalker:
         all_walks = None
 
         t1 = time.time()
-        pool = multiprocessing.Pool(processes=self.workers)
+        pool = multiprocessing.Pool(processes=self.parallel_walks)
         all_walks = pool.map(self.mp_rw_wrapper, range(self.num_walks))
+        pool.close()  # Waiting for all subprocesses done..
+        pool.join()
         all_walks = list(chain(*all_walks))
         t2 = time.time()
         print(f'Time for all random walks: {(t2-t1):.2f}')  # use multiple cores, total time < sum(time@itr)
@@ -140,11 +154,12 @@ class BasicWalker:
 
 # ===========================================node2vec-walker============================================
 class Walker:
-    def __init__(self, g, p, q, workers):
+    def __init__(self, g, p, q, workers, parallel_walks=10): # recommend: parallel_walks = number_walks; if memory error, plz reduce it
         self.g = g
         self.p = p
         self.q = q
         self.workers = workers
+        self.parallel_walks = parallel_walks
 
         if self.g.get_isweighted():
             # print('is weighted graph: ', self.g.get_isweighted())
@@ -180,8 +195,12 @@ class Walker:
 
     def mp_rw_wrapper(self, walk_iter):
         walks = []
+        random.seed()                       # *** for multiprocessor version
+        np.random.seed()                    # *** do NOT remove these 'random' operation
+        nodes = list(self.nodes.copy())     # *** otherwise, each number_walks may give the same node sequences...
+        random.shuffle(nodes)               # *** which hence decrease performance
         t1 = time.time()
-        for node in self.nodes:
+        for node in nodes:
             walks.append(self.node2vec_walk(start_node=node))
         t2 = time.time()
         print(f'Walk iteration: {walk_iter+1}/{self.num_walks}; time cost: {(t2-t1):.2f}')
@@ -197,8 +216,10 @@ class Walker:
         all_walks = None
 
         t1 = time.time()
-        pool = multiprocessing.Pool(processes=self.workers)
+        pool = multiprocessing.Pool(processes=self.parallel_walks)
         all_walks = pool.map(self.mp_rw_wrapper, range(self.num_walks))
+        pool.close()  # Waiting for all subprocesses done..
+        pool.join()
         all_walks = list(chain(*all_walks))
         t2 = time.time()
         print(f'Time for all random walks: {(t2-t1):.2f}')  # use multiple cores, total time < sum(time@itr)

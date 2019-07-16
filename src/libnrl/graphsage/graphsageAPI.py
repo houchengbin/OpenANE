@@ -9,6 +9,7 @@
 '''
 
 import random
+import time
 
 import networkx as nx
 import numpy as np
@@ -24,7 +25,11 @@ class graphSAGE(object):
         self.walk_len = 5
 
         self.add_train_val_test_to_G(test_perc=0.0, val_perc=0.1)  # if unsupervised, no test data
+
+        t1 = time.time()
         train_data = self.tranform_data_for_graphsage()  # obtain graphSAGE required training data
+        t2 = time.time()
+        print(f'transform data format from OpenANE to SAGE; time cost: {(t2-t1):.2f}s')
 
         self.vectors = None
         if not is_supervised:

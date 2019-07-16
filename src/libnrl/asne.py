@@ -20,7 +20,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 class ASNE(BaseEstimator, TransformerMixin):
     def __init__(self, graph, dim, alpha=1.0, learning_rate=0.0001, batch_size=128, epoch=20, n_neg_samples=10,
-                 early_stopping=2000):  # it seems that overfitting can get better result? try other early_stopping... to do...
+                 early_stopping=2000):
 
         t1 = time.time()
         X, nodes, id_N, attr_M, id_embedding_size, attr_embedding_size = format_data_from_OpenANE_to_ASNE(g=graph, dim=dim)
@@ -121,7 +121,7 @@ class ASNE(BaseEstimator, TransformerMixin):
         iter_count = 0
         train_loss_best = 0
         train_loss_keep_increasing = 0
-        early_stopping = self.early_stopping  # early stopping if training loss increased
+        early_stopping = self.early_stopping  # early stopping if training loss increased for early_stopping times
 
         for epoch in range(self.epoch):
             t1 = time.time()
@@ -136,6 +136,13 @@ class ASNE(BaseEstimator, TransformerMixin):
 
                 # Fit training using batch data
                 train_loss = self.partial_fit(batch_xs)
+                ''' 
+                # no early stopping; 
+                # as the original code did https://github.com/lizi-git/ASNE/blob/master/SNE.py
+                # it seems that the more epochs are, the better results are...
+                # e.g. 10 epochs are obviously better than 1 epoch, 
+                # but after approximately 50 epochs, there is no much gain or loss...
+                # so we run for all 100 epochs to ensure the best performance
                 iter_count += 1
                 if iter_count == 1:
                     train_loss_best = train_loss
@@ -157,6 +164,7 @@ class ASNE(BaseEstimator, TransformerMixin):
                             return self.vectors
                         else:
                             pass
+                    '''
             t2 = time.time()
             print(f'epoch @ {epoch+1}/{self.epoch}; time cost: {(t2-t1):.2f}s',)
 
@@ -195,7 +203,7 @@ class ASNE(BaseEstimator, TransformerMixin):
 
 def format_data_from_OpenANE_to_ASNE(g, dim):
     ''' convert OpenANE data format to ASNE data format '''
-    attr_Matrix = g.get_attr_mat(is_sparse=False)
+    attr_Matrix = g.get_attr_mat(dense_output=True)
     id_N = attr_Matrix.shape[0]  # n nodes
     attr_M = attr_Matrix.shape[1]  # m features
 

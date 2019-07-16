@@ -92,24 +92,24 @@ class Graph(object):
     # ------------------------------------------------------------------------------------------
     # --------------------commonly used APIs that will not modify graph-------------------------
     # ------------------------------------------------------------------------------------------
-    def get_adj_mat(self, is_sparse=True):
+    def get_adj_mat(self, dense_output=True):
         """ return adjacency matrix; \n
             use 'csr' format for sparse matrix \n
         """
-        if is_sparse:
-            return nx.to_scipy_sparse_matrix(self.G, nodelist=self.look_back_list, format='csr', dtype='float64')
-        else:
+        if dense_output:
             return nx.to_numpy_matrix(self.G, nodelist=self.look_back_list, dtype='float64')
+        else:
+            return nx.to_scipy_sparse_matrix(self.G, nodelist=self.look_back_list, format='csr', dtype='float64')
 
-    def get_attr_mat(self, is_sparse=True):
+    def get_attr_mat(self, dense_output=True):
         """ return attribute matrix; \n
             use 'csr' format for sparse matrix \n
         """
         attr_dense_narray = np.vstack([self.G.nodes[self.look_back_list[i]]['attr'] for i in range(self.get_num_nodes())])
-        if is_sparse:
-            return sp.csr_matrix(attr_dense_narray, dtype='float64')
-        else:
+        if dense_output:
             return np.matrix(attr_dense_narray, dtype='float64')
+        else:
+            return sp.csr_matrix(attr_dense_narray, dtype='float64')
 
     def get_num_nodes(self):
         """ return the number of nodes """

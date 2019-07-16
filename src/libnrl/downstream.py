@@ -100,6 +100,21 @@ class lpClassifier(object):
             roc = 1.0 - roc  # since lp is binary clf task, just predict the opposite if<0.5
         print("roc=", "{:.9f}".format(roc))
 
+def cosine_similarity(a, b):
+    from numpy import dot
+    from numpy.linalg import norm
+    ''' cosine similarity; can be used as score function; vector by vector; 
+        If consider similarity for all pairs,
+        pairwise_similarity() implementation may be more efficient
+    '''
+    a = np.reshape(a,-1)
+    b = np.reshape(b,-1)
+    if norm(a)*norm(b) == 0:
+        return 0.0
+    else:
+        return dot(a, b)/(norm(a)*norm(b))
+
+'''
 def norm(a):
     sum = 0.0
     for i in range(len(a)):
@@ -111,6 +126,7 @@ def cosine_similarity(a, b):
     for i in range(len(a)):
         sum = sum + a[i] * b[i]
     return sum / (norm(a) * norm(b) + 1e-100)
+'''
 
 '''
 def lp_train_test_split(graph, ratio=0.8, neg_pos_link_ratio=1.0):

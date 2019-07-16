@@ -29,7 +29,7 @@ class TADW(object):
 
     def getAdj(self):
         A = self.g.get_adj_mat()  # by default, return a sparse matrix
-        return np.array(row_as_probdist(A, dense_output=True, preserve_zeros=True))  # only support np.array, otherwise dim error...
+        return np.array(row_as_probdist(A, dense_output=True, preserve_all_zero_row=True))  # only support np.array, otherwise dim error...
 
     def getT(self):
         g = self.g.G

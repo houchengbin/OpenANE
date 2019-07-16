@@ -1,6 +1,10 @@
-''' global parameters for graphsage models
-    tune these parameters here if needed
-    if needed use: from libnrl.graphsage.__init__ import *
+''' 
+global parameters for graphsage models
+tune these parameters here if needed
+if needed use: from libnrl.graphsage.__init__ import *
+we mostly follow the original code: 
+https://github.com/williamleif/GraphSAGE/blob/master/graphsage/unsupervised_train.py
+and   https://github.com/tkipf/gcn/blob/master/gcn/train.py
 '''
 
 # seed = 2018
@@ -8,10 +12,7 @@
 # tf.set_random_seed(seed)
 log_device_placement = False
 
-
-# follow the original code by the paper author https://github.com/williamleif/GraphSAGE
 # we follow the opt parameters given by papers GCN and graphSAGE
-# note: citeseer+pubmed all follow the same parameters as cora, see their papers)
 # tensorflow + Adam optimizer + Random weight init + row norm of attr
 dim_1 = 64  # dim = dim1+dim2 = 128 for sage-mean and sage-gcn
 dim_2 = 64
@@ -19,19 +20,20 @@ samples_1 = 25
 samples_2 = 10
 
 # key parameters during training
-epochs = 100
-learning_rate = 0.001  # search [0.01, 0.001, 0.0001, 0.00001]
-dropout = 0.5
-weight_decay = 5e-4
-batch_size = 512  # if run out of memory, try to reduce them, default=512
+epochs = 50             # max epoch, we found it converges in a few epochs, and the more links are, the less epochs are required
+                        # so we set run for all 50 epochs and take out the embeddings with the best val loss
+learning_rate = 0.0001  # search [0.01, 0.001, 0.0001]
+dropout = 0.5           # dropout rate (1 - keep probability)
+batch_size = 128        # if run out of memory, try to reduce them, default=512
+weight_decay = 1e-6     # weight for L2 loss on embedding matrix
 
 # key parameters durning val
-validate_batch_size = 256  # if run out of memory, try to reduce them, default=256
+validate_batch_size = 128  # if run out of memory, try to reduce them, default=256
 validate_iter = 5000
 max_total_steps = 10**10
 print_every = 50
 
-# other parameters also follow the defaults https://github.com/williamleif/GraphSAGE
+# other parameters: also follow the defaults https://github.com/williamleif/GraphSAGE
 neg_sample_size = 20
 identity_dim = 0
 n2v_test_epochs = 1
@@ -44,6 +46,7 @@ base_log_dir = ''
 
 
 '''
+https://github.com/williamleif/GraphSAGE/blob/master/graphsage/unsupervised_train.py
 #core params..
 flags.DEFINE_string('model', 'graphsage', 'model names. See README for possible values.')
 flags.DEFINE_float('learning_rate', 0.00001, 'initial learning rate.')
@@ -73,4 +76,19 @@ flags.DEFINE_integer('validate_batch_size', 256, "how many nodes per validation 
 flags.DEFINE_integer('gpu', 1, "which gpu to use.")
 flags.DEFINE_integer('print_every', 50, "How often to print training info.")
 flags.DEFINE_integer('max_total_steps', 10**10, "Maximum total number of iterations")
+
+----------------------------------------------------------------------------------------------------------
+
+https://github.com/tkipf/gcn/blob/master/gcn/train.py
+flags = tf.app.flags
+FLAGS = flags.FLAGS
+flags.DEFINE_string('dataset', 'cora', 'Dataset string.')  # 'cora', 'citeseer', 'pubmed'
+flags.DEFINE_string('model', 'gcn', 'Model string.')  # 'gcn', 'gcn_cheby', 'dense'
+flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
+flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
+flags.DEFINE_integer('hidden1', 16, 'Number of units in hidden layer 1.')
+flags.DEFINE_float('dropout', 0.5, 'Dropout rate (1 - keep probability).')
+flags.DEFINE_float('weight_decay', 5e-4, 'Weight for L2 loss on embedding matrix.')
+flags.DEFINE_integer('early_stopping', 10, 'Tolerance for early stopping (# of epochs).')
+flags.DEFINE_integer('max_degree', 3, 'Maximum Chebyshev polynomial degree.')
 '''

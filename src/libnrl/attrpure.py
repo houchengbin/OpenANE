@@ -21,7 +21,7 @@ class ATTRPURE(object):
             self.vectors[key] = embeddings[ind]
 
     def train(self):
-        X = self.g.get_attr_mat().todense()
+        X = self.g.get_attr_mat()
         X_compressed = None
         if self.mode == 'pca':
             X_compressed = dim_reduction(X, dim=self.dim, method='pca')
