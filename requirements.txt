@@ -1,7 +1,7 @@
 # tested in python==3.6.6
 numpy==1.14.5
 scipy==1.1.0
-tensorflow==1.10.0 # to do... compatible with latest tf and tf-gpu
+tensorflow==1.15.2 # to do... compatible with latest tf and tf-gpu
 tensorboard==1.10.0
 networkx==2.3
 gensim==3.7.3
