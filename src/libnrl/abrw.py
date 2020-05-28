@@ -96,8 +96,7 @@ class ABRW(object):
         # n*n*8 is the bytes required by pairwise similarity matrix; 2e9 = 2GB ROM remained for safety reason
         # if your computer have 200G memory, there should be no problem for graph with 100k nodes
         # this naive implementation is **faster** than BallTree implementation, thanks to numpy
-        #if n*n*8 + n*n*8 + n*5000*8 + 2e9 < free_memory and n < 1e5:   # X_sim[n,n] dense + A[n,n] if dense + X[n,5000] if dense with max 5000 feats + 2e9 for safety
-        if False:
+        if False:   # X_sim[n,n] dense + A[n,n] if dense + X[n,5000] if dense with max 5000 feats + 2e9 for safety
             print('naive implementation + intro-select ')
             t1 = time.time()
             X_sim = pairwise_similarity(X.todense())
