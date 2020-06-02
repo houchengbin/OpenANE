@@ -27,14 +27,16 @@ PNE methods:
 [others](https://github.com/thunlp/OpenNE)
 <br> All methods in this framework are **unsupervised**, and so do not require any label during embedding phase.
 
-For more details of each method, please have a look at our paper https://arxiv.org/abs/1811.11728. And if you find ABRW (namely RoSANE in the paper) or this framework is useful for your research, please consider citing it.
+For more details of each method, please have a look at our paper https://doi.org/10.1016/j.neucom.2020.05.080. And if you find [ABRW (namely RoSANE in the paper) or this framework](https://doi.org/10.1016/j.neucom.2020.05.080) is useful for your research, please consider citing it.
 ```
 @article{hou2020RoSANE,
   title={RoSANE: Robust and Scalable Attributed Network Embedding for Sparse Networks},
   author={Hou, Chengbin and He, Shan and Tang, Ke},
   journal={Neurocomputing},
   year={2020},
-  publisher={Elsevier}
+  publisher={Elsevier},
+  url={https://doi.org/10.1016/j.neucom.2020.05.080},
+  doi={10.1016/j.neucom.2020.05.080},
 }
 ```
 
