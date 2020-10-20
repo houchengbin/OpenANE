@@ -6,8 +6,8 @@ Authors: Chengbin HOU chengbin.hou10@foxmail.com & Zeyu DONG zeyu.dong@foxmail.c
 
 
 ## Motivation
-In many real-world scenarios, a network often comes with node attributes such as paper metadata in a citation network, user profiles in a social network, and even node degrees in any pure networks. Unfortunately, PNE methods cannot make use of attribute information that may further improve the quality of node embeddings. 
-<br> From engineering perspective, by offering more APIs to handle attribute information in graph.py and utils.py, OpenANE shall be easy to use for embedding an attributed network. Except attributed networks, OpenANE can also deal with pure networks by calling PNE methods, or by assigning node degrees as node attributes and then calling ANE methods. Therefore, to some extent, ANE methods can be regarded as the generalization of PNE methods.
+In many real-world scenarios, a network often comes with node attributes such as paper metadata in a citation network, user profiles in a social network, and even node degrees in any plain networks. Unfortunately, PNE methods cannot make use of attribute information that may further improve the quality of node embeddings. 
+<br> From engineering perspective, by offering more APIs to handle attribute information in graph.py and utils.py, OpenANE shall be easy to use for embedding an attributed network. Except attributed networks, OpenANE can also deal with plain networks by calling PNE methods, or by assigning node degrees as node attributes and then calling ANE methods. Therefore, to some extent, ANE methods can be regarded as the generalization of PNE methods.
 
 ## Methods
 ANE methods: 
@@ -116,6 +116,3 @@ For the meaning and suggestion of each parameter, please see main.py.
 
 ## Contribution
 We highly welcome and appreciate your contribution in fixing bugs, reproducing new ANE methods, etc. Please use the *pull requests* and your contribution will automatically appear in this project once accepted. We will add you to authors list, if your contribution is significant to this project.
-
-## References
-To do...
