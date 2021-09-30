@@ -11,7 +11,7 @@ In many real-world scenarios, a network often comes with node attributes such as
 
 ## Methods
 ANE methods: 
-[ABRW](https://github.com/houchengbin/ABRW),
+**ABRW (our method)**,
 [ASNE](https://github.com/lizi-git/ASNE),
 [AANE](https://github.com/xhuang31/AANE_Python),
 [SAGE-Mean](https://github.com/williamleif/GraphSAGE),
@@ -27,7 +27,7 @@ PNE methods:
 [others](https://github.com/thunlp/OpenNE)
 <br> All methods in this framework are **unsupervised**, and so do not require any label during embedding phase.
 
-For more details of each method, please have a look at our [paper](https://doi.org/10.1016/j.neucom.2020.05.080) or [preprint via ResearchGate link](https://www.researchgate.net/publication/341826514_RoSANE_Robust_and_Scalable_Attributed_Network_Embedding_for_Sparse_Networks). And if you find ABRW (namely RoSANE in the paper) or this frameworkis useful for your research, please consider citing it.
+For more details of each method, please have a look at our [paper](https://doi.org/10.1016/j.neucom.2020.05.080) or [preprint via ResearchGate link](https://www.researchgate.net/publication/341826514_RoSANE_Robust_and_Scalable_Attributed_Network_Embedding_for_Sparse_Networks). And if you find **ABRW (namely RoSANE in the paper)** or this frameworkis useful for your research, please consider citing it.
 ```
 @article{hou2020RoSANE,
   title={RoSANE: Robust and Scalable Attributed Network Embedding for Sparse Networks},
