@@ -1,6 +1,7 @@
 """
-ANE method: Adap-ANE: Adaptive Attributed Network Embedding
-            based on previous Attributed Biased Random Walks https://arxiv.org/abs/1811.11728v2
+ANE method: Robust and Scalable Attributed Network Embedding (RoSANE) for Sparse Networks
+            https://doi.org/10.1016/j.neucom.2020.05.080
+            (based on previous Attributed Biased Random Walks https://arxiv.org/abs/1811.11728v2)
 
 by Chengbin Hou & Zeyu Dong 2018
 """
